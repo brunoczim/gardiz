@@ -288,21 +288,21 @@ impl<T> CoordPair<T> {
     where
         T: WrappingAdd + WrappingMul + Roots,
     {
-        self.wrapping_dot(self).sqrt()
+        self.wrapping_sqr_mag().sqrt()
     }
 
     pub fn saturating_int_mag(&self) -> T
     where
         T: SaturatingAdd + SaturatingMul + Roots,
     {
-        self.saturating_dot(self).sqrt()
+        self.saturating_sqr_mag().sqrt()
     }
 
     pub fn checked_int_mag(&self) -> Option<T>
     where
         T: CheckedAdd + CheckedMul + Roots,
     {
-        let squared = self.checked_dot(self)?;
+        let squared = self.checked_sqr_mag()?;
         Some(squared.sqrt())
     }
 }
