@@ -48,13 +48,13 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct CoordPair<C> {
-    pub y: C,
-    pub x: C,
+pub struct CoordPair<T> {
+    pub y: T,
+    pub x: T,
 }
 
-impl<C> Index<Axis> for CoordPair<C> {
-    type Output = C;
+impl<T> Index<Axis> for CoordPair<T> {
+    type Output = T;
 
     fn index(&self, axis: Axis) -> &Self::Output {
         match axis {
@@ -64,7 +64,7 @@ impl<C> Index<Axis> for CoordPair<C> {
     }
 }
 
-impl<C> IndexMut<Axis> for CoordPair<C> {
+impl<T> IndexMut<Axis> for CoordPair<T> {
     fn index_mut(&mut self, axis: Axis) -> &mut Self::Output {
         match axis {
             Axis::Y => &mut self.y,
@@ -73,95 +73,91 @@ impl<C> IndexMut<Axis> for CoordPair<C> {
     }
 }
 
-impl<C> CoordPair<C> {
+impl<T> CoordPair<T> {
     pub fn from_axes<F>(mut mapper: F) -> Self
     where
-        F: FnMut(Axis) -> C,
+        F: FnMut(Axis) -> T,
     {
         Self { y: mapper(Axis::Y), x: mapper(Axis::X) }
     }
 
-    pub fn as_ref(&self) -> CoordPair<&C> {
+    pub fn as_ref(&self) -> CoordPair<&T> {
         CoordPair { x: &self.x, y: &self.y }
     }
 
-    pub fn as_mut(&mut self) -> CoordPair<&mut C> {
+    pub fn as_mut(&mut self) -> CoordPair<&mut T> {
         CoordPair { x: &mut self.x, y: &mut self.y }
     }
 
-    pub fn map_with_axes<F, A>(self, mut mapper: F) -> CoordPair<A>
+    pub fn map_with_axes<F, U>(self, mut mapper: F) -> CoordPair<U>
     where
-        F: FnMut(Axis, C) -> A,
+        F: FnMut(Axis, T) -> U,
     {
         CoordPair { y: mapper(Axis::Y, self.y), x: mapper(Axis::X, self.x) }
     }
 
-    pub fn map<F, A>(self, mut mapper: F) -> CoordPair<A>
+    pub fn map<F, U>(self, mut mapper: F) -> CoordPair<U>
     where
-        F: FnMut(C) -> A,
+        F: FnMut(T) -> U,
     {
         CoordPair { y: mapper(self.y), x: mapper(self.x) }
     }
 
-    pub fn fold<F, A>(self, init: A, mut folder: F) -> A
+    pub fn fold<F, U>(self, init: U, mut folder: F) -> U
     where
-        F: FnMut(C, A) -> A,
+        F: FnMut(T, U) -> U,
     {
         let acc = folder(self.x, init);
         folder(self.y, acc)
     }
 
-    pub fn fold_rev<F, A>(self, init: A, mut folder: F) -> A
+    pub fn fold_rev<F, U>(self, init: U, mut folder: F) -> U
     where
-        F: FnMut(A, C) -> A,
+        F: FnMut(U, T) -> U,
     {
         let acc = folder(init, self.y);
         folder(acc, self.x)
     }
 
-    pub fn zip<A>(self, other: CoordPair<A>) -> CoordPair<(C, A)> {
+    pub fn zip<U>(self, other: CoordPair<U>) -> CoordPair<(T, U)> {
         self.zip_with(other, |this, other| (this, other))
     }
 
-    pub fn zip_with<F, A, B>(
+    pub fn zip_with<F, U, B>(
         self,
-        other: CoordPair<A>,
+        other: CoordPair<U>,
         mut zipper: F,
     ) -> CoordPair<B>
     where
-        F: FnMut(C, A) -> B,
+        F: FnMut(T, U) -> B,
     {
         CoordPair { x: zipper(self.x, other.x), y: zipper(self.y, other.y) }
     }
 
-    pub fn dot<A>(
-        self,
-        other: CoordPair<A>,
-    ) -> <<C as Mul<A>>::Output as Add>::Output
+    pub fn dot<U, A>(self, other: CoordPair<U>) -> A::Output
     where
-        C: Mul<A>,
-        <C as Mul<A>>::Output: Add,
+        T: Mul<U, Output = A>,
+        A: Add,
     {
-        let prod = self.zip_with(other, |this, other| this * other);
+        let prod = self * other;
         prod.y + prod.x
     }
 
-    pub fn dot_ref<'this, 'other, A>(
+    pub fn dot_ref<'this, 'other, U, A>(
         &'this self,
-        other: &'other CoordPair<A>,
-    ) -> <<&'this C as Mul<&'other A>>::Output as Add>::Output
+        other: &'other CoordPair<U>,
+    ) -> A::Output
     where
-        &'this C: Mul<&'other A>,
-        <&'this C as Mul<&'other A>>::Output: Add,
+        &'this T: Mul<&'other U, Output = A>,
+        A: Add,
     {
-        let prod =
-            self.as_ref().zip_with(other.as_ref(), |this, other| this * other);
+        let prod = self.as_ref() * other.as_ref();
         prod.y + prod.x
     }
 
-    pub fn wrapping_dot(&self, other: &Self) -> C
+    pub fn wrapping_dot(&self, other: &Self) -> T
     where
-        C: WrappingAdd + WrappingMul,
+        T: WrappingAdd + WrappingMul,
     {
         let prod = self
             .as_ref()
@@ -169,9 +165,9 @@ impl<C> CoordPair<C> {
         prod.y.wrapping_add(&prod.x)
     }
 
-    pub fn saturating_dot(&self, other: &Self) -> C
+    pub fn saturating_dot(&self, other: &Self) -> T
     where
-        C: SaturatingAdd + SaturatingMul,
+        T: SaturatingAdd + SaturatingMul,
     {
         let prod = self
             .as_ref()
@@ -179,9 +175,9 @@ impl<C> CoordPair<C> {
         prod.y.saturating_add(&prod.x)
     }
 
-    pub fn checked_dot(&self, other: &Self) -> Option<C>
+    pub fn checked_dot(&self, other: &Self) -> Option<T>
     where
-        C: CheckedAdd + CheckedMul,
+        T: CheckedAdd + CheckedMul,
     {
         let prod = self
             .as_ref()
@@ -190,56 +186,129 @@ impl<C> CoordPair<C> {
         prod.y.checked_add(&prod.x)
     }
 
-    pub fn sqr_magnitude(self) -> <C::Output as Add>::Output
+    pub fn sqr_magnitude<A>(self) -> A::Output
     where
-        C: Clone,
-        C: Mul,
-        C::Output: Add,
+        T: Clone,
+        T: Mul<Output = A>,
+        A: Add,
     {
         self.clone().dot(self)
     }
 
-    /*
-    pub fn sqr_magnitude_ref<'this>(
-        &'this self,
-    ) -> <<&'this C as Mul>::Output as Add>::Output
+    pub fn sqr_magnitude_ref<'this, A>(&'this self) -> A::Output
     where
-        &'this C: Mul,
-        <&'this C as Mul>::Output: Add,
+        &'this T: Mul<Output = A>,
+        A: Add,
     {
         self.dot_ref(self)
     }
-    */
 
-    pub fn magnitude(self) -> <C::Output as Add>::Output
+    pub fn wrapping_sqr_mag(&self) -> T
     where
-        C: Clone,
-        C: Mul,
-        C::Output: Add,
-        <C::Output as Add>::Output: Float,
+        T: WrappingAdd + WrappingMul,
+    {
+        self.wrapping_dot(self)
+    }
+
+    pub fn saturating_sqr_mag(&self) -> T
+    where
+        T: SaturatingMul + SaturatingAdd,
+    {
+        self.saturating_dot(self)
+    }
+
+    pub fn checked_sqr_mag(&self) -> Option<T>
+    where
+        T: CheckedMul + CheckedAdd,
+    {
+        self.checked_dot(self)
+    }
+
+    pub fn magnitude<A>(self) -> A::Output
+    where
+        T: Clone,
+        T: Mul<Output = A>,
+        A: Add,
+        A::Output: Float,
     {
         self.sqr_magnitude().sqrt()
     }
 
-    pub fn int_magnitude(self) -> <C::Output as Add>::Output
+    pub fn magnitude_ref<'this, A>(&'this self) -> A::Output
     where
-        C: Clone,
-        C: Mul,
-        C::Output: Add,
-        <C::Output as Add>::Output: Roots,
+        &'this T: Mul<&'this T, Output = A>,
+        A: Add,
+        A::Output: Float,
+    {
+        self.sqr_magnitude_ref().sqrt()
+    }
+
+    pub fn wrapping_mag(&self) -> T
+    where
+        T: WrappingAdd + WrappingMul + Float,
+    {
+        self.wrapping_dot(self).sqrt()
+    }
+
+    pub fn saturating_mag(&self) -> T
+    where
+        T: SaturatingAdd + SaturatingMul + Float,
+    {
+        self.saturating_dot(self).sqrt()
+    }
+
+    pub fn checked_mag(&self) -> Option<T>
+    where
+        T: CheckedAdd + CheckedMul + Float,
+    {
+        let squared = self.checked_dot(self)?;
+        Some(squared.sqrt())
+    }
+
+    pub fn int_magnitude<A>(self) -> A::Output
+    where
+        T: Clone,
+        T: Mul<Output = A>,
+        A: Add,
+        A::Output: Roots,
     {
         self.sqr_magnitude().sqrt()
     }
-}
 
-impl CoordPair<i32> {
-    pub fn sqr_magnitude_ref<'this>(&'this self) -> i32 {
-        self.dot_ref(self)
+    pub fn int_magnitude_ref<'this, A>(&'this self) -> A::Output
+    where
+        &'this T: Mul<&'this T, Output = A>,
+        A: Add,
+        A::Output: Roots,
+    {
+        self.sqr_magnitude_ref().sqrt()
+    }
+
+    pub fn wrapping_int_mag(&self) -> T
+    where
+        T: WrappingAdd + WrappingMul + Roots,
+    {
+        self.wrapping_dot(self).sqrt()
+    }
+
+    pub fn saturating_int_mag(&self) -> T
+    where
+        T: SaturatingAdd + SaturatingMul + Roots,
+    {
+        self.saturating_dot(self).sqrt()
+    }
+
+    pub fn checked_int_mag(&self) -> Option<T>
+    where
+        T: CheckedAdd + CheckedMul + Roots,
+    {
+        let squared = self.checked_dot(self)?;
+        Some(squared.sqrt())
     }
 }
 
-impl<C> CoordPair<Option<C>> {
-    pub fn transpose(self) -> Option<CoordPair<C>> {
+impl<T> CoordPair<Option<T>> {
+    pub fn transpose(self) -> Option<CoordPair<T>> {
         match (self.y, self.x) {
             (Some(y), Some(x)) => Some(CoordPair { y, x }),
             _ => None,
@@ -247,12 +316,12 @@ impl<C> CoordPair<Option<C>> {
     }
 }
 
-impl<C> Zero for CoordPair<C>
+impl<T> Zero for CoordPair<T>
 where
-    C: Zero,
+    T: Zero,
 {
     fn zero() -> Self {
-        Self::from_axes(|_| C::zero())
+        Self::from_axes(|_| T::zero())
     }
 
     fn is_zero(&self) -> bool {
@@ -266,12 +335,12 @@ where
     }
 }
 
-impl<C> One for CoordPair<C>
+impl<T> One for CoordPair<T>
 where
-    C: One,
+    T: One,
 {
     fn one() -> Self {
-        Self::from_axes(|_| C::one())
+        Self::from_axes(|_| T::one())
     }
 
     fn set_one(&mut self) {
@@ -283,49 +352,48 @@ where
 
 macro_rules! elemwise_binop {
     ($trait:ident, $method:ident) => {
-        impl<C, A> $trait<CoordPair<A>> for CoordPair<C>
+        impl<T, U> $trait<CoordPair<U>> for CoordPair<T>
         where
-            C: $trait<A>,
+            T: $trait<U>,
         {
-            type Output = CoordPair<C::Output>;
+            type Output = CoordPair<T::Output>;
 
-            fn $method(self, other: CoordPair<A>) -> Self::Output {
+            fn $method(self, other: CoordPair<U>) -> Self::Output {
                 self.zip_with(other, |this, other| this.$method(other))
             }
         }
 
-        impl<'param, C, A> $trait<&'param CoordPair<A>> for CoordPair<C>
+        impl<'other, T, U> $trait<&'other CoordPair<U>> for CoordPair<T>
         where
-            C: $trait<&'param A>,
+            T: $trait<&'other U>,
         {
-            type Output = CoordPair<C::Output>;
+            type Output = CoordPair<T::Output>;
 
-            fn $method(self, other: &'param CoordPair<A>) -> Self::Output {
+            fn $method(self, other: &'other CoordPair<U>) -> Self::Output {
                 self.zip_with(other.as_ref(), |this, other| this.$method(other))
             }
         }
 
-        impl<'this, C, A> $trait<CoordPair<A>> for &'this CoordPair<C>
+        impl<'this, T, U> $trait<CoordPair<U>> for &'this CoordPair<T>
         where
-            &'this C: $trait<A>,
+            &'this T: $trait<U>,
         {
-            type Output = CoordPair<<&'this C as $trait<A>>::Output>;
+            type Output = CoordPair<<&'this T as $trait<U>>::Output>;
 
-            fn $method(self, other: CoordPair<A>) -> Self::Output {
+            fn $method(self, other: CoordPair<U>) -> Self::Output {
                 self.as_ref().zip_with(other, |this, other| this.$method(other))
             }
         }
 
-        impl<'this, 'param, C, A> $trait<&'param CoordPair<A>>
-            for &'this CoordPair<C>
+        impl<'this, 'other, T, U> $trait<&'other CoordPair<U>>
+            for &'this CoordPair<T>
         where
-            &'this C: $trait<&'param A>,
+            &'this T: $trait<&'other U>,
         {
-            type Output = CoordPair<<&'this C as $trait<&'param A>>::Output>;
+            type Output = CoordPair<<&'this T as $trait<&'other U>>::Output>;
 
-            fn $method(self, other: &'param CoordPair<A>) -> Self::Output {
-                self.as_ref()
-                    .zip_with(other.as_ref(), |this, other| this.$method(other))
+            fn $method(self, other: &'other CoordPair<U>) -> Self::Output {
+                self.as_ref().$method(other.as_ref())
             }
         }
     };
@@ -333,43 +401,43 @@ macro_rules! elemwise_binop {
 
 macro_rules! elemwise_assign {
     ($trait:ident, $method:ident) => {
-        impl<C, A> $trait<CoordPair<A>> for CoordPair<C>
+        impl<T, U> $trait<CoordPair<U>> for CoordPair<T>
         where
-            C: $trait<A>,
+            T: $trait<U>,
         {
-            fn $method(&mut self, other: CoordPair<A>) {
+            fn $method(&mut self, other: CoordPair<U>) {
                 self.y.$method(other.y);
                 self.x.$method(other.x);
             }
         }
 
-        impl<'param, C, A> $trait<&'param CoordPair<A>> for CoordPair<C>
+        impl<'param, T, U> $trait<&'param CoordPair<U>> for CoordPair<T>
         where
-            C: $trait<&'param A>,
+            T: $trait<&'param U>,
         {
-            fn $method(&mut self, other: &'param CoordPair<A>) {
+            fn $method(&mut self, other: &'param CoordPair<U>) {
                 for axis in Axis::all() {
                     self[axis].$method(&other[axis]);
                 }
             }
         }
 
-        impl<'this, C, A> $trait<CoordPair<A>> for &'this mut CoordPair<C>
+        impl<'this, T, U> $trait<CoordPair<U>> for &'this mut CoordPair<T>
         where
-            for<'a> &'a mut C: $trait<A>,
+            for<'a> &'a mut T: $trait<U>,
         {
-            fn $method(&mut self, other: CoordPair<A>) {
+            fn $method(&mut self, other: CoordPair<U>) {
                 (&mut self.y).$method(other.y);
                 (&mut self.x).$method(other.x);
             }
         }
 
-        impl<'this, 'param, C, A> $trait<&'param CoordPair<A>>
-            for &'this mut CoordPair<C>
+        impl<'this, 'param, T, U> $trait<&'param CoordPair<U>>
+            for &'this mut CoordPair<T>
         where
-            for<'a> &'a mut C: $trait<&'param A>,
+            for<'a> &'a mut T: $trait<&'param U>,
         {
-            fn $method(&mut self, other: &'param CoordPair<A>) {
+            fn $method(&mut self, other: &'param CoordPair<U>) {
                 for axis in Axis::all() {
                     (&mut self[axis]).$method(&other[axis]);
                 }
@@ -389,22 +457,22 @@ elemwise_assign! { DivAssign, div_assign }
 elemwise_binop! { Rem, rem }
 elemwise_assign! { RemAssign, rem_assign }
 
-impl<C> Neg for CoordPair<C>
+impl<T> Neg for CoordPair<T>
 where
-    C: Neg,
+    T: Neg,
 {
-    type Output = CoordPair<C::Output>;
+    type Output = CoordPair<T::Output>;
 
     fn neg(self) -> Self::Output {
         self.map(|elem| -elem)
     }
 }
 
-impl<'this, C> Neg for &'this CoordPair<C>
+impl<'this, T> Neg for &'this CoordPair<T>
 where
-    &'this C: Neg,
+    &'this T: Neg,
 {
-    type Output = CoordPair<<&'this C as Neg>::Output>;
+    type Output = CoordPair<<&'this T as Neg>::Output>;
 
     fn neg(self) -> Self::Output {
         self.as_ref().map(|elem| -elem)
@@ -413,9 +481,9 @@ where
 
 macro_rules! elemwise_overflow {
     ($trait:ident, $method:ident) => {
-        impl<C> $trait for CoordPair<C>
+        impl<T> $trait for CoordPair<T>
         where
-            C: $trait,
+            T: $trait,
         {
             fn $method(&self, other: &Self) -> Self {
                 self.as_ref()
@@ -432,9 +500,9 @@ elemwise_overflow! { SaturatingAdd, saturating_add}
 elemwise_overflow! { SaturatingSub, saturating_sub}
 elemwise_overflow! { SaturatingMul, saturating_mul}
 
-impl<C> WrappingNeg for CoordPair<C>
+impl<T> WrappingNeg for CoordPair<T>
 where
-    C: WrappingNeg,
+    T: WrappingNeg,
 {
     fn wrapping_neg(&self) -> Self {
         self.as_ref().map(|elem| elem.wrapping_neg())
@@ -443,9 +511,9 @@ where
 
 macro_rules! elemwise_checked {
     ($trait:ident, $method:ident) => {
-        impl<C> $trait for CoordPair<C>
+        impl<T> $trait for CoordPair<T>
         where
-            C: $trait,
+            T: $trait,
         {
             fn $method(&self, other: &Self) -> Option<Self> {
                 self.as_ref()
@@ -462,9 +530,9 @@ elemwise_checked! { CheckedMul, checked_mul }
 elemwise_checked! { CheckedDiv, checked_div }
 elemwise_checked! { CheckedRem, checked_rem }
 
-impl<C> CheckedNeg for CoordPair<C>
+impl<T> CheckedNeg for CoordPair<T>
 where
-    C: CheckedNeg,
+    T: CheckedNeg,
 {
     fn checked_neg(&self) -> Option<Self> {
         self.as_ref().map(|elem| elem.checked_neg()).transpose()
@@ -495,11 +563,11 @@ where
 
 impl<E> Error for FromStrRadixErr<E> where E: Error {}
 
-impl<C> Num for CoordPair<C>
+impl<T> Num for CoordPair<T>
 where
-    C: Num,
+    T: Num,
 {
-    type FromStrRadixErr = FromStrRadixErr<C::FromStrRadixErr>;
+    type FromStrRadixErr = FromStrRadixErr<T::FromStrRadixErr>;
 
     fn from_str_radix(
         input: &str,
@@ -510,19 +578,19 @@ where
         let str_x = &input[.. index].trim();
         let str_y = &input[index + 1 ..].trim();
         Ok(Self {
-            x: C::from_str_radix(str_x, radix)
+            x: T::from_str_radix(str_x, radix)
                 .map_err(|err| BadCoord(Axis::X, err))?,
-            y: C::from_str_radix(str_y, radix)
+            y: T::from_str_radix(str_y, radix)
                 .map_err(|err| BadCoord(Axis::Y, err))?,
         })
     }
 }
 
-impl<C> Unsigned for CoordPair<C> where C: Unsigned {}
+impl<T> Unsigned for CoordPair<T> where T: Unsigned {}
 
-impl<C> Signed for CoordPair<C>
+impl<T> Signed for CoordPair<T>
 where
-    C: Signed,
+    T: Signed,
 {
     fn abs(&self) -> Self {
         self.as_ref().map(|elem| elem.abs())
@@ -546,37 +614,37 @@ where
     }
 }
 
-impl<C> CastSigned for CoordPair<C>
+impl<T> CastSigned for CoordPair<T>
 where
-    C: CastSigned,
+    T: CastSigned,
 {
-    type Target = CoordPair<C::Target>;
+    type Target = CoordPair<T::Target>;
 
     fn cast_signed(&self) -> Self::Target {
         self.as_ref().map(|elem| elem.cast_signed())
     }
 }
 
-impl<C> CastUnsigned for CoordPair<C>
+impl<T> CastUnsigned for CoordPair<T>
 where
-    C: CastUnsigned,
+    T: CastUnsigned,
 {
-    type Target = CoordPair<C::Target>;
+    type Target = CoordPair<T::Target>;
 
     fn cast_unsigned(&self) -> Self::Target {
         self.as_ref().map(|elem| elem.cast_unsigned())
     }
 }
 
-impl<C> Bounded for CoordPair<C>
+impl<T> Bounded for CoordPair<T>
 where
-    C: Bounded,
+    T: Bounded,
 {
     fn min_value() -> Self {
-        Self::from_axes(|_| C::min_value())
+        Self::from_axes(|_| T::min_value())
     }
 
     fn max_value() -> Self {
-        Self::from_axes(|_| C::max_value())
+        Self::from_axes(|_| T::max_value())
     }
 }

@@ -1,4 +1,4 @@
-mod excess;
-mod axis;
-mod direc;
-mod coord;
+pub mod excess;
+pub mod axis;
+pub mod direc;
+pub mod coord;
