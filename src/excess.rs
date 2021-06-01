@@ -125,3 +125,74 @@ where
         self.cast_unsigned().wrapping_add(excess)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::{
+        CastSigned,
+        CastUnsigned,
+        Distance,
+        ExcessToSigned,
+        HalfExcess,
+        SignedToExcess,
+    };
+
+    #[test]
+    fn distance() {
+        assert_eq!(8u8.distance(3), 5);
+        assert_eq!(4u8.distance(7), 3);
+        assert_eq!(5u8.distance(5), 0);
+        assert_eq!((-9i8).distance(1), 10);
+        assert_eq!((-2i8).distance(-17), 15);
+    }
+
+    #[test]
+    fn half_excesss() {
+        assert_eq!(u8::half_excess(), 0x80);
+        assert_eq!(u16::half_excess(), 0x8000);
+    }
+
+    #[test]
+    fn excesss_to_signed() {
+        assert_eq!(0u8.excess_to_signed(&10), -10);
+        assert_eq!(9u8.excess_to_signed(&10), -1);
+        assert_eq!(10u8.excess_to_signed(&10), 0);
+        assert_eq!(11u8.excess_to_signed(&10), 1);
+        assert_eq!(13u8.excess_to_signed(&9), 4);
+        assert_eq!(130u8.excess_to_signed(&128), 2);
+    }
+
+    #[test]
+    fn signed_to_excesss() {
+        assert_eq!((-10i8).signed_to_excess(&10), 0);
+        assert_eq!((-1i8).signed_to_excess(&10), 9);
+        assert_eq!(0i8.signed_to_excess(&10), 10);
+        assert_eq!(1i8.signed_to_excess(&10), 11);
+        assert_eq!(4i8.signed_to_excess(&9), 13);
+        assert_eq!(2i8.signed_to_excess(&128), 130);
+    }
+
+    #[test]
+    fn signed_to_unsigned() {
+        assert_eq!(127i8.cast_unsigned(), 127);
+        assert_eq!(9i8.cast_unsigned(), 9);
+        assert_eq!(1i8.cast_unsigned(), 1);
+        assert_eq!(0i8.cast_unsigned(), 0);
+        assert_eq!((-1i8).cast_unsigned(), 255);
+        assert_eq!((-3i8).cast_unsigned(), 253);
+        assert_eq!((-127i8).cast_unsigned(), 129);
+        assert_eq!((-128i8).cast_unsigned(), 128);
+    }
+
+    #[test]
+    fn unsigned_to_signed() {
+        assert_eq!(127u8.cast_signed(), 127);
+        assert_eq!(9u8.cast_signed(), 9);
+        assert_eq!(1u8.cast_signed(), 1);
+        assert_eq!(0u8.cast_signed(), 0);
+        assert_eq!(255u8.cast_signed(), -1);
+        assert_eq!(253u8.cast_signed(), -3);
+        assert_eq!(129u8.cast_signed(), -127);
+        assert_eq!(128u8.cast_signed(), -128);
+    }
+}

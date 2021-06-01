@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod test;
+
 use crate::{
     axis::Axis,
     excess::{CastSigned, CastUnsigned},
@@ -418,28 +421,6 @@ macro_rules! elemwise_assign {
             fn $method(&mut self, other: &'param CoordPair<U>) {
                 for axis in Axis::all() {
                     self[axis].$method(&other[axis]);
-                }
-            }
-        }
-
-        impl<'this, T, U> $trait<CoordPair<U>> for &'this mut CoordPair<T>
-        where
-            for<'a> &'a mut T: $trait<U>,
-        {
-            fn $method(&mut self, other: CoordPair<U>) {
-                (&mut self.y).$method(other.y);
-                (&mut self.x).$method(other.x);
-            }
-        }
-
-        impl<'this, 'param, T, U> $trait<&'param CoordPair<U>>
-            for &'this mut CoordPair<T>
-        where
-            for<'a> &'a mut T: $trait<&'param U>,
-        {
-            fn $method(&mut self, other: &'param CoordPair<U>) {
-                for axis in Axis::all() {
-                    (&mut self[axis]).$method(&other[axis]);
                 }
             }
         }
