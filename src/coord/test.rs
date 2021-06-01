@@ -3,6 +3,7 @@ use num::traits::{
     CheckedAdd,
     CheckedDiv,
     CheckedMul,
+    CheckedNeg,
     CheckedRem,
     CheckedSub,
     SaturatingAdd,
@@ -10,12 +11,14 @@ use num::traits::{
     SaturatingSub,
     WrappingAdd,
     WrappingMul,
+    WrappingNeg,
     WrappingSub,
 };
 
 #[test]
 fn basic_math() {
     let pair: CoordPair<i32> = CoordPair { x: 5, y: -9 };
+    assert_eq!(-pair, CoordPair { x: -5, y: 9 });
     assert_eq!(pair + CoordPair { x: 1, y: 2 }, CoordPair { x: 6, y: -7 });
     assert_eq!(pair - CoordPair { x: 1, y: 2 }, CoordPair { x: 4, y: -11 });
     assert_eq!(pair * CoordPair { x: -2, y: 3 }, CoordPair { x: -10, y: -27 });
@@ -63,6 +66,7 @@ fn wrapping_math() {
         pair.wrapping_add(&CoordPair { x: 2, y: 254 }),
         CoordPair { x: 5, y: 248 }
     );
+
     assert_eq!(
         pair.wrapping_sub(&CoordPair { x: 2, y: 1 }),
         CoordPair { x: 1, y: 249 }
@@ -75,6 +79,7 @@ fn wrapping_math() {
         pair.wrapping_sub(&CoordPair { x: 254, y: 2 }),
         CoordPair { x: 5, y: 248 }
     );
+
     assert_eq!(
         pair.wrapping_mul(&CoordPair { x: 9, y: 1 }),
         CoordPair { x: 27, y: 250 }
@@ -86,6 +91,15 @@ fn wrapping_math() {
     assert_eq!(
         pair.wrapping_mul(&CoordPair { x: 2, y: 5 }),
         CoordPair { x: 6, y: 226 }
+    );
+
+    assert_eq!(
+        CoordPair { x: -5i8, y: 127 }.wrapping_neg(),
+        CoordPair { x: 5, y: -127 }
+    );
+    assert_eq!(
+        CoordPair { x: -5i8, y: -128 }.wrapping_neg(),
+        CoordPair { x: 5, y: -128 }
     );
 }
 
@@ -104,6 +118,7 @@ fn saturating_math() {
         pair.saturating_add(&CoordPair { x: 2, y: 254 }),
         CoordPair { x: 5, y: 255 }
     );
+
     assert_eq!(
         pair.saturating_sub(&CoordPair { x: 2, y: 1 }),
         CoordPair { x: 1, y: 249 }
@@ -116,6 +131,7 @@ fn saturating_math() {
         pair.saturating_sub(&CoordPair { x: 254, y: 2 }),
         CoordPair { x: 0, y: 248 }
     );
+
     assert_eq!(
         pair.saturating_mul(&CoordPair { x: 9, y: 1 }),
         CoordPair { x: 27, y: 250 }
@@ -165,6 +181,12 @@ fn checked_math() {
         Some(CoordPair { x: 1, y: 7 })
     );
     assert_eq!(pair.checked_rem(&CoordPair { x: 8, y: 0 }), None);
+
+    assert_eq!(
+        CoordPair { x: -5i8, y: 127 }.checked_neg(),
+        Some(CoordPair { x: 5, y: -127 })
+    );
+    assert_eq!(CoordPair { x: -5i8, y: -128 }.checked_neg(), None);
 }
 
 #[test]
