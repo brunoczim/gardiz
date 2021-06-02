@@ -10,7 +10,7 @@ impl Direction {
     pub const ALL: [Direction; 4] =
         [Direction::Up, Direction::Down, Direction::Left, Direction::Right];
 
-    pub fn all() -> impl DoubleEndedIterator<Item = Direction> {
+    pub fn iter() -> impl DoubleEndedIterator<Item = Direction> {
         Self::ALL.iter().copied()
     }
 }

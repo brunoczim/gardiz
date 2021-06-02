@@ -19,6 +19,7 @@ use num::{
         Float,
         Num,
         One,
+        Pow,
         SaturatingAdd,
         SaturatingMul,
         SaturatingSub,
@@ -138,7 +139,25 @@ impl<T> CoordPair<T> {
     {
         CoordPair { x: zipper(self.x, other.x), y: zipper(self.y, other.y) }
     }
+}
 
+impl<'elems, T> CoordPair<&'elems T> {
+    pub fn cloned(self) -> CoordPair<T>
+    where
+        T: Clone,
+    {
+        self.map(Clone::clone)
+    }
+
+    pub fn copied(self) -> CoordPair<T>
+    where
+        T: Copy,
+    {
+        self.map(|&elem| elem)
+    }
+}
+
+impl<T> CoordPair<T> {
     pub fn dot<U, A>(self, other: CoordPair<U>) -> A::Output
     where
         T: Mul<U, Output = A>,
@@ -486,7 +505,7 @@ where
     }
 
     fn set_zero(&mut self) {
-        for axis in Axis::all() {
+        for axis in Axis::iter() {
             self[axis].set_zero();
         }
     }
@@ -501,7 +520,7 @@ where
     }
 
     fn set_one(&mut self) {
-        for axis in Axis::all() {
+        for axis in Axis::iter() {
             self[axis].set_one();
         }
     }
@@ -573,7 +592,7 @@ macro_rules! elemwise_assign {
             T: $trait<&'param U>,
         {
             fn $method(&mut self, other: &'param CoordPair<U>) {
-                for axis in Axis::all() {
+                for axis in Axis::iter() {
                     self[axis].$method(&other[axis]);
                 }
             }
@@ -591,6 +610,7 @@ elemwise_binop! { Div, div }
 elemwise_assign! { DivAssign, div_assign }
 elemwise_binop! { Rem, rem }
 elemwise_assign! { RemAssign, rem_assign }
+elemwise_binop! { Pow, pow }
 
 impl<T> Neg for CoordPair<T>
 where
