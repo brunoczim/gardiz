@@ -308,6 +308,28 @@ fn move_direction() {
 }
 
 #[test]
+fn direction_to() {
+    let pair: CoordPair<u64> = CoordPair { x: 10033, y: 987654321 };
+    assert_eq!(pair.direction_to(&CoordPair { x: 10033, y: 987654321 }), None);
+    assert_eq!(
+        pair.direction_to(&CoordPair { x: 10033, y: 1 }),
+        Some(Direction::Up)
+    );
+    assert_eq!(
+        pair.direction_to(&CoordPair { x: 2, y: 987654321 }),
+        Some(Direction::Left)
+    );
+    assert_eq!(
+        pair.direction_to(&CoordPair { x: 10033, y: 10987654321 }),
+        Some(Direction::Down)
+    );
+    assert_eq!(
+        pair.direction_to(&CoordPair { x: 21144, y: 987654321 }),
+        Some(Direction::Right)
+    );
+}
+
+#[test]
 fn center_origin() {
     let pair: CoordPair<u8> = CoordPair { x: 3, y: 130 };
     assert_eq!(

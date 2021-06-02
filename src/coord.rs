@@ -32,6 +32,7 @@ use num::{
     },
 };
 use std::{
+    cmp::Ordering,
     error::Error,
     fmt,
     ops::{
@@ -413,6 +414,30 @@ impl<T> CoordPair<T> {
         T: CheckedAdd + CheckedSub + One,
     {
         self.checked_move_by(direction, &T::one())
+    }
+
+    pub fn direction_to(&self, other: &Self) -> Option<Direction>
+    where
+        T: Ord,
+    {
+        let cmping = self
+            .as_ref()
+            .zip_with(other.as_ref(), |this, other| this.cmp(&other));
+        match cmping {
+            CoordPair { x: Ordering::Equal, y: Ordering::Greater } => {
+                Some(Direction::Up)
+            },
+            CoordPair { x: Ordering::Equal, y: Ordering::Less } => {
+                Some(Direction::Down)
+            },
+            CoordPair { x: Ordering::Greater, y: Ordering::Equal } => {
+                Some(Direction::Left)
+            },
+            CoordPair { x: Ordering::Less, y: Ordering::Equal } => {
+                Some(Direction::Right)
+            },
+            _ => None,
+        }
     }
 
     pub fn flip_y(self) -> Self
