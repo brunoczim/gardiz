@@ -1,4 +1,4 @@
-use super::CoordPair;
+use crate::{coord::CoordPair, direc::Direction};
 use num::traits::{
     CheckedAdd,
     CheckedDiv,
@@ -258,4 +258,61 @@ fn int_magnitude() {
     assert_eq!(pair.wrapping_int_mag(), 3);
     assert_eq!(pair.saturating_int_mag(), 15);
     assert_eq!(pair.checked_int_mag(), None);
+}
+
+#[test]
+fn move_direction() {
+    let pair: CoordPair<i16> = CoordPair { x: 3, y: -9 };
+    assert_eq!(pair.move_by(Direction::Up, 8), CoordPair { x: 3, y: -17 });
+    assert_eq!(pair.move_by(Direction::Down, 3), CoordPair { x: 3, y: -6 });
+    assert_eq!(pair.move_by(Direction::Left, 9), CoordPair { x: -6, y: -9 });
+    assert_eq!(pair.move_by(Direction::Right, 7), CoordPair { x: 10, y: -9 });
+
+    assert_eq!(
+        pair.wrapping_move_by(Direction::Up, &i16::MAX),
+        CoordPair { x: 3, y: 32760 }
+    );
+    assert_eq!(
+        pair.saturating_move_by(Direction::Right, &i16::MAX),
+        CoordPair { x: i16::MAX, y: -9 }
+    );
+    assert_eq!(
+        pair.checked_move_by(Direction::Left, &2),
+        Some(CoordPair { x: 1, y: -9 })
+    );
+    assert_eq!(pair.checked_move_by(Direction::Down, &i16::MIN), None);
+
+    let pair: CoordPair<u16> = CoordPair { x: 0xffff, y: 0 };
+    assert_eq!(pair.move_one(Direction::Left), CoordPair { x: 0xfffe, y: 0 });
+    assert_eq!(
+        pair.wrapping_move(Direction::Up),
+        CoordPair { x: 0xffff, y: 0xffff }
+    );
+    assert_eq!(
+        pair.wrapping_move(Direction::Down),
+        CoordPair { x: 0xffff, y: 1 }
+    );
+    assert_eq!(
+        pair.saturating_move(Direction::Left),
+        CoordPair { x: 0xfffe, y: 0 }
+    );
+    assert_eq!(
+        pair.saturating_move(Direction::Right),
+        CoordPair { x: 0xffff, y: 0 }
+    );
+    assert_eq!(pair.checked_move(Direction::Up), None);
+    assert_eq!(
+        pair.checked_move(Direction::Left),
+        Some(CoordPair { x: 0xfffe, y: 0 })
+    );
+}
+
+#[test]
+fn center_origin() {
+    let pair: CoordPair<u8> = CoordPair { x: 3, y: 130 };
+    assert_eq!(
+        pair.center_origin_at(&CoordPair { x: 20, y: 30 }),
+        CoordPair { x: -17, y: -101 }
+    );
+    assert_eq!(pair.center_origin(), CoordPair { x: -125, y: -3 });
 }

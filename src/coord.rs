@@ -4,7 +4,7 @@ mod test;
 use crate::{
     axis::Axis,
     direc::Direction,
-    excess::{CastSigned, CastUnsigned},
+    excess::{CastSigned, CastUnsigned, ExcessToSigned, HalfExcess},
 };
 use num::{
     integer::Roots,
@@ -413,6 +413,29 @@ impl<T> CoordPair<T> {
         T: CheckedAdd + CheckedSub + One,
     {
         self.checked_move_by(direction, &T::one())
+    }
+
+    pub fn flip_y(self) -> Self
+    where
+        T: Sub<Output = T> + Neg<Output = T> + One,
+    {
+        Self { y: -T::one() - self.y, ..self }
+    }
+
+    pub fn center_origin_at<U>(self, origin: &CoordPair<T>) -> CoordPair<U>
+    where
+        Self: ExcessToSigned<Target = CoordPair<U>>,
+        U: Sub<Output = U> + Neg<Output = U> + One,
+    {
+        self.excess_to_signed(origin).flip_y()
+    }
+
+    pub fn center_origin<U>(self) -> CoordPair<U>
+    where
+        Self: ExcessToSigned<Target = CoordPair<U>> + HalfExcess,
+        U: Sub<Output = U> + Neg<Output = U> + One,
+    {
+        self.half_exc_to_signed().flip_y()
     }
 }
 
