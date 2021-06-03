@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod test;
+
 use crate::{axis::Axis, coord::CoordPair};
 use num::traits::{
     CheckedAdd,
@@ -29,7 +32,7 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
-    pub fn try_from_range<U>(
+    pub fn try_from_range(
         start: CoordPair<T>,
         end: CoordPair<T>,
     ) -> Option<Self>
@@ -37,6 +40,40 @@ impl<T> Rect<T> {
         T: Clone + CheckedSub,
     {
         let size = end.checked_sub(&start)?;
+        Some(Self { start, size })
+    }
+}
+
+impl<T, S> Rect<T, S> {
+    pub fn from_range_incl<Z>(start: CoordPair<T>, end: CoordPair<T>) -> Self
+    where
+        T: Sub<Output = Z> + Clone + Ord,
+        Z: One + Add<Output = S>,
+        S: Zero,
+    {
+        let size = if end < start {
+            CoordPair::<S>::zero()
+        } else {
+            end - start.clone() + CoordPair::<Z>::one()
+        };
+        Self { start, size }
+    }
+}
+
+impl<T> Rect<T> {
+    pub fn try_from_range_incl(
+        start: CoordPair<T>,
+        end: CoordPair<T>,
+    ) -> Option<Self>
+    where
+        T: CheckedAdd + CheckedSub + One + Zero + Ord + Clone,
+    {
+        let size = if end < start {
+            CoordPair::<T>::zero()
+        } else {
+            let diff = end.checked_sub(&start.clone())?;
+            diff.checked_add(&CoordPair::<T>::one())?
+        };
         Some(Self { start, size })
     }
 }
@@ -258,7 +295,7 @@ impl<T> Rect<T> {
             .saturating_end_incl()
             .zip_with(other.saturating_end_incl(), Ord::min);
         let size = end.zip_with(start, |end, start| {
-            end.saturating_add(&T::one()).saturating_sub(start)
+            end.saturating_sub(&start.saturating_add(&T::one()))
         });
         Rect { start: start.cloned(), size }
     }
