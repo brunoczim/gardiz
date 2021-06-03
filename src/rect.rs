@@ -102,14 +102,14 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
-    pub fn wrapping_end_incl<U, V>(&self) -> CoordPair<T>
+    pub fn wrapping_end_incl(&self) -> CoordPair<T>
     where
         T: WrappingAdd + WrappingSub + One,
     {
         self.start.wrapping_add(&self.size).wrapping_sub(&CoordPair::<T>::one())
     }
 
-    pub fn saturating_end_incl<U, V>(&self) -> CoordPair<T>
+    pub fn saturating_end_incl(&self) -> CoordPair<T>
     where
         T: SaturatingAdd + SaturatingSub + One + Zero,
     {
@@ -121,7 +121,7 @@ impl<T> Rect<T> {
         }
     }
 
-    pub fn checked_end_incl<U, V>(&self) -> Option<CoordPair<T>>
+    pub fn checked_end_incl(&self) -> Option<CoordPair<T>>
     where
         T: CheckedAdd + CheckedSub + One + Zero,
     {
@@ -175,42 +175,57 @@ impl<T, S> Rect<T, S> {
         }
     }
 
-    pub fn has_point<'this>(&'this self, point: CoordPair<T>) -> bool
+    pub fn has_point<'this, U>(&'this self, point: CoordPair<T>) -> bool
     where
-        &'this T: Add<&'this S, Output = T>,
-        T: Ord,
+        &'this S: Sub<S, Output = U>,
+        S: One + Zero,
+        &'this T: Add<U, Output = T> + Sub<T, Output = T>,
+        T: Sub<&'this T> + One + Ord,
     {
-        let end = self.end_ref();
-        Axis::iter().all(|axis| {
-            point[axis] >= self.start[axis] && point[axis] < end[axis]
+        let maybe_end = self.end_non_empty_ref();
+        maybe_end.map_or(false, |end| {
+            Axis::iter().all(|axis| {
+                let this_less = self.start[axis] <= point[axis];
+                let other_less = point[axis] <= end[axis];
+                this_less && other_less
+            })
         })
     }
 
-    pub fn overlaps<'params>(&'params self, other: &'params Self) -> bool
+    pub fn overlaps<'params, U>(&'params self, other: &'params Self) -> bool
     where
-        &'params T: Add<&'params S, Output = T>,
-        T: Ord,
+        &'params S: Sub<S, Output = U>,
+        S: One + Zero,
+        &'params T: Add<U, Output = T> + Sub<T, Output = T>,
+        T: Sub<&'params T> + One + Ord,
     {
-        let this_end = self.end_ref();
-        let other_end = other.end_ref();
-        Axis::iter().all(|axis| {
-            self.start[axis] <= other_end[axis]
-                && other.start[axis] <= this_end[axis]
+        let maybe_ends =
+            self.end_non_empty_ref().zip(other.end_non_empty_ref());
+
+        maybe_ends.map_or(false, |(this_end, other_end)| {
+            Axis::iter().all(|axis| {
+                let this_less = self.start[axis] <= other_end[axis];
+                let other_less = other.start[axis] <= this_end[axis];
+                this_less && other_less
+            })
         })
     }
 
-    pub fn overlapped<'params, Z>(
+    pub fn overlapped<'params, U, Z>(
         &'params self,
         other: &'params Self,
-    ) -> Rect<T, Z>
+    ) -> Rect<T, <Z as Add>::Output>
     where
-        &'params T: Add<&'params S, Output = T>,
-        T: Sub<&'params T, Output = Z> + Ord + Clone,
+        &'params S: Sub<S, Output = U>,
+        S: One + Zero,
+        &'params T: Add<U, Output = T> + Sub<T, Output = T>,
+        T: Sub<&'params T, Output = Z> + One + Ord + Clone,
+        Z: One + Add,
     {
         let start =
             self.start.as_ref().zip_with(other.start.as_ref(), Ord::max);
-        let end = self.end_ref().zip_with(other.end_ref(), Ord::min);
-        let size = end.zip_with(start, |end, start| end - start);
+        let end = self.end_incl_ref().zip_with(other.end_incl_ref(), Ord::min);
+        let size = end.zip_with(start, |end, start| end - start + Z::one());
         Rect { start: start.cloned(), size }
     }
 }
@@ -235,12 +250,13 @@ impl<T> Rect<T> {
         other: &'params Self,
     ) -> Self
     where
-        T: SaturatingAdd + SaturatingSub + Ord + Clone,
+        T: SaturatingAdd + SaturatingSub + One + Zero + Ord + Clone,
     {
         let start =
             self.start.as_ref().zip_with(other.start.as_ref(), Ord::max);
-        let end =
-            self.saturating_end().zip_with(other.saturating_end(), Ord::min);
+        let end = self
+            .saturating_end_incl()
+            .zip_with(other.saturating_end_incl(), Ord::min);
         let size = end.zip_with(start, |end, start| end.saturating_sub(start));
         Rect { start: start.cloned(), size }
     }
@@ -250,11 +266,13 @@ impl<T> Rect<T> {
         other: &'params Self,
     ) -> Option<Self>
     where
-        T: CheckedAdd + CheckedSub + Ord + Clone,
+        T: CheckedAdd + CheckedSub + One + Zero + Ord + Clone,
     {
         let start =
             self.start.as_ref().zip_with(other.start.as_ref(), Ord::max);
-        let end = self.checked_end()?.zip_with(other.checked_end()?, Ord::min);
+        let end = self
+            .checked_end_incl()?
+            .zip_with(other.checked_end_incl()?, Ord::min);
         let size = end
             .zip_with(start, |end, start| end.checked_sub(start))
             .transpose()?;
