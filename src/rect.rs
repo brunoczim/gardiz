@@ -257,7 +257,9 @@ impl<T> Rect<T> {
         let end = self
             .saturating_end_incl()
             .zip_with(other.saturating_end_incl(), Ord::min);
-        let size = end.zip_with(start, |end, start| end.saturating_sub(start));
+        let size = end.zip_with(start, |end, start| {
+            end.saturating_add(&T::one()).saturating_sub(start)
+        });
         Rect { start: start.cloned(), size }
     }
 
@@ -275,6 +277,8 @@ impl<T> Rect<T> {
             .zip_with(other.checked_end_incl()?, Ord::min);
         let size = end
             .zip_with(start, |end, start| end.checked_sub(start))
+            .transpose()?
+            .map(|elem| elem.checked_add(&T::one()))
             .transpose()?;
         Some(Rect { start: start.cloned(), size })
     }
