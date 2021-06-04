@@ -825,3 +825,101 @@ fn checked_overlapped() {
     };
     assert_eq!(left.checked_overlapped(&right), None,);
 }
+
+#[test]
+fn columns() {
+    let rect = Rect {
+        start: CoordPair { x: 1, y: 3 },
+        size: CoordPair { x: 4, y: 3 },
+    };
+    let points: Vec<_> = rect.columns().collect();
+    let mut answer = vec![
+        CoordPair { x: 1, y: 3 },
+        CoordPair { x: 1, y: 4 },
+        CoordPair { x: 1, y: 5 },
+        CoordPair { x: 2, y: 3 },
+        CoordPair { x: 2, y: 4 },
+        CoordPair { x: 2, y: 5 },
+        CoordPair { x: 3, y: 3 },
+        CoordPair { x: 3, y: 4 },
+        CoordPair { x: 3, y: 5 },
+        CoordPair { x: 4, y: 3 },
+        CoordPair { x: 4, y: 4 },
+        CoordPair { x: 4, y: 5 },
+    ];
+    assert_eq!(points, answer);
+
+    answer.reverse();
+    let points: Vec<_> = rect.columns().rev().collect();
+    assert_eq!(points, answer);
+
+    let rect = Rect::<u16> {
+        start: CoordPair { x: 1, y: 3 },
+        size: CoordPair { x: 0, y: 0 },
+    };
+    assert_eq!(rect.columns().collect::<Vec<_>>(), Vec::new());
+}
+
+#[test]
+fn rows() {
+    let rect = Rect {
+        start: CoordPair { x: 1, y: 3 },
+        size: CoordPair { x: 4, y: 3 },
+    };
+    let points: Vec<_> = rect.rows().collect();
+    let mut answer = vec![
+        CoordPair { x: 1, y: 3 },
+        CoordPair { x: 2, y: 3 },
+        CoordPair { x: 3, y: 3 },
+        CoordPair { x: 4, y: 3 },
+        CoordPair { x: 1, y: 4 },
+        CoordPair { x: 2, y: 4 },
+        CoordPair { x: 3, y: 4 },
+        CoordPair { x: 4, y: 4 },
+        CoordPair { x: 1, y: 5 },
+        CoordPair { x: 2, y: 5 },
+        CoordPair { x: 3, y: 5 },
+        CoordPair { x: 4, y: 5 },
+    ];
+    assert_eq!(points, answer);
+
+    answer.reverse();
+    let points: Vec<_> = rect.rows().rev().collect();
+    assert_eq!(points, answer);
+
+    let rect = Rect::<u16> {
+        start: CoordPair { x: 1, y: 3 },
+        size: CoordPair { x: 0, y: 0 },
+    };
+    assert_eq!(Vec::<CoordPair<u16>>::new(), rect.rows().collect::<Vec<_>>());
+}
+
+#[test]
+fn borders() {
+    let rect = Rect {
+        start: CoordPair { x: 1, y: 3 },
+        size: CoordPair { x: 4, y: 3 },
+    };
+    let points: Vec<_> = rect.borders().collect();
+    let answer = vec![
+        CoordPair { x: 1, y: 3 },
+        CoordPair { x: 1, y: 4 },
+        CoordPair { x: 1, y: 5 },
+        CoordPair { x: 4, y: 3 },
+        CoordPair { x: 4, y: 4 },
+        CoordPair { x: 4, y: 5 },
+        CoordPair { x: 2, y: 3 },
+        CoordPair { x: 3, y: 3 },
+        CoordPair { x: 4, y: 3 },
+        CoordPair { x: 2, y: 5 },
+        CoordPair { x: 3, y: 5 },
+        CoordPair { x: 4, y: 5 },
+    ];
+    assert_eq!(points, answer);
+
+    let rect = Rect::<u16> {
+        start: CoordPair { x: 1, y: 3 },
+        size: CoordPair { x: 0, y: 0 },
+    };
+    assert_eq!(rect.borders().collect::<Vec<_>>(), Vec::new());
+}

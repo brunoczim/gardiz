@@ -398,18 +398,19 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let inner = self.inner.as_mut()?;
-        if inner.front.y == inner.end.y {
-            inner.front.x += T::one();
-            if inner.front.x >= inner.back.x {
-                return None;
+        let front = inner.front.clone();
+        if inner.front.y >= inner.end.y {
+            if inner.front.x < inner.back.x {
+                inner.front.x += T::one();
+                inner.front.y = inner.start.y.clone();
+            } else {
+                self.inner = None;
             }
-            inner.front.y = inner.start.y.clone();
         } else if inner.sides_crossed() {
             self.inner = None;
-            return None;
+        } else {
+            inner.front.y += T::one();
         }
-        let front = inner.front.clone();
-        inner.front.y += T::one();
         Some(front)
     }
 }
@@ -420,18 +421,20 @@ where
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let inner = self.inner.as_mut()?;
-        if inner.back.y == inner.start.y {
-            if inner.back.x <= inner.front.x {
-                None?
+        let back = inner.back.clone();
+        if inner.back.y <= inner.start.y {
+            if inner.front.x < inner.back.x {
+                inner.back.x -= T::one();
+                inner.back.y = inner.end.y.clone();
+            } else {
+                self.inner = None;
             }
-            inner.back.x -= T::one();
-            inner.back.y = inner.end.y.clone();
         } else if inner.sides_crossed() {
             self.inner = None;
-            return None;
+        } else {
+            inner.back.y -= T::one();
         }
-        inner.back.y -= T::one();
-        Some(inner.back.clone())
+        Some(back)
     }
 }
 
@@ -465,19 +468,20 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let inner = self.inner.as_mut()?;
-        if inner.front.x == inner.end.x {
-            inner.front.y += T::one();
-            if inner.front.y >= inner.back.y {
-                return None;
+        let front = inner.front.clone();
+        if inner.front.x >= inner.end.x {
+            if inner.front.y < inner.back.y {
+                inner.front.y += T::one();
+                inner.front.x = inner.start.x.clone();
+            } else {
+                self.inner = None;
             }
-            inner.front.x = inner.start.x.clone();
         } else if inner.sides_crossed() {
             self.inner = None;
-            return None;
+        } else {
+            inner.front.x += T::one();
         }
-        let curr = inner.front.clone();
-        inner.front.x += T::one();
-        Some(curr)
+        Some(front)
     }
 }
 
@@ -487,18 +491,20 @@ where
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         let inner = self.inner.as_mut()?;
-        if inner.back.x == inner.start.x {
-            if inner.back.y <= inner.front.y {
-                None?
+        let back = inner.back.clone();
+        if inner.back.x <= inner.start.x {
+            if inner.front.y < inner.back.y {
+                inner.back.y -= T::one();
+                inner.back.x = inner.end.x.clone();
+            } else {
+                self.inner = None;
             }
-            inner.back.y -= T::one();
-            inner.back.x = inner.end.x.clone();
         } else if inner.sides_crossed() {
             self.inner = None;
-            return None;
+        } else {
+            inner.back.x -= T::one();
         }
-        inner.back.x -= T::one();
-        Some(inner.back.clone())
+        Some(back)
     }
 }
 
@@ -535,13 +541,13 @@ where
 
         match inner.fixed_axis {
             Axis::X => {
-                let ret = inner.curr.clone();
+                let curr = inner.curr.clone();
                 if inner.curr.y >= inner.end.y {
                     if inner.curr.x >= inner.end.x {
-                        if inner.start.x == inner.end.x {
-                            self.inner = None;
-                        } else {
+                        if inner.start.x < inner.end.x {
                             inner.to_first_row();
+                        } else {
+                            self.inner = None;
                         }
                     } else {
                         inner.to_second_col();
@@ -549,21 +555,21 @@ where
                 } else {
                     inner.iter_col();
                 }
-                Some(ret)
+                Some(curr)
             },
 
             Axis::Y => {
-                let ret = inner.curr.clone();
+                let curr = inner.curr.clone();
                 if inner.curr.x >= inner.end.x {
-                    if inner.curr.y >= inner.end.y {
+                    if inner.curr.y < inner.end.y {
+                        inner.to_second_row();
+                    } else {
                         self.inner = None;
-                        return None;
                     }
-                    inner.to_second_row();
                 } else {
                     inner.iter_row();
                 }
-                Some(ret)
+                Some(curr)
             },
         }
     }
@@ -595,7 +601,7 @@ where
 
     fn to_second_row(&mut self) {
         self.curr.y = self.end.y.clone();
-        self.curr.x = self.end.y.clone();
+        self.curr.x = self.start.x.clone();
         self.curr.x += T::one();
     }
 
