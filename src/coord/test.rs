@@ -1,4 +1,7 @@
-use crate::{coord::CoordPair, direc::Direction};
+use crate::{
+    coord::CoordPair,
+    direc::{DirecVector, Direction},
+};
 use num::traits::{
     CheckedAdd,
     CheckedDiv,
@@ -263,24 +266,51 @@ fn int_magnitude() {
 #[test]
 fn move_direction() {
     let pair: CoordPair<i16> = CoordPair { x: 3, y: -9 };
-    assert_eq!(pair.move_by(Direction::Up, 8), CoordPair { x: 3, y: -17 });
-    assert_eq!(pair.move_by(Direction::Down, 3), CoordPair { x: 3, y: -6 });
-    assert_eq!(pair.move_by(Direction::Left, 9), CoordPair { x: -6, y: -9 });
-    assert_eq!(pair.move_by(Direction::Right, 7), CoordPair { x: 10, y: -9 });
+    assert_eq!(
+        pair.move_by(DirecVector { direction: Direction::Up, magnitude: 8 }),
+        CoordPair { x: 3, y: -17 }
+    );
+    assert_eq!(
+        pair.move_by(DirecVector { direction: Direction::Down, magnitude: 3 }),
+        CoordPair { x: 3, y: -6 }
+    );
+    assert_eq!(
+        pair.move_by(DirecVector { direction: Direction::Left, magnitude: 9 }),
+        CoordPair { x: -6, y: -9 }
+    );
+    assert_eq!(
+        pair.move_by(DirecVector { direction: Direction::Right, magnitude: 7 }),
+        CoordPair { x: 10, y: -9 }
+    );
 
     assert_eq!(
-        pair.wrapping_move_by(Direction::Up, &i16::MAX),
+        pair.wrapping_move_by(&DirecVector {
+            direction: Direction::Up,
+            magnitude: i16::MAX
+        }),
         CoordPair { x: 3, y: 32760 }
     );
     assert_eq!(
-        pair.saturating_move_by(Direction::Right, &i16::MAX),
+        pair.saturating_move_by(&DirecVector {
+            direction: Direction::Right,
+            magnitude: i16::MAX
+        }),
         CoordPair { x: i16::MAX, y: -9 }
     );
     assert_eq!(
-        pair.checked_move_by(Direction::Left, &2),
+        pair.checked_move_by(&DirecVector {
+            direction: Direction::Left,
+            magnitude: 2,
+        }),
         Some(CoordPair { x: 1, y: -9 })
     );
-    assert_eq!(pair.checked_move_by(Direction::Down, &i16::MIN), None);
+    assert_eq!(
+        pair.checked_move_by(&DirecVector {
+            direction: Direction::Down,
+            magnitude: i16::MIN,
+        }),
+        None
+    );
 
     let pair: CoordPair<u16> = CoordPair { x: 0xffff, y: 0 };
     assert_eq!(pair.move_one(Direction::Left), CoordPair { x: 0xfffe, y: 0 });

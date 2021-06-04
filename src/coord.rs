@@ -3,7 +3,7 @@ mod test;
 
 use crate::{
     axis::Axis,
-    direc::Direction,
+    direc::{DirecVector, Direction},
     excess::{CastSigned, CastUnsigned, ExcessToSigned, HalfExcess},
 };
 use num::{
@@ -330,109 +330,32 @@ impl<T> CoordPair<T> {
         Some(squared.sqrt())
     }
 
-    pub fn move_by<U>(self, direction: Direction, amount: U) -> Self
-    where
-        T: Add<U, Output = T> + Sub<U, Output = T>,
-    {
-        match direction {
-            Direction::Up => CoordPair { y: self.y - amount, ..self },
-            Direction::Down => CoordPair { y: self.y + amount, ..self },
-            Direction::Left => CoordPair { x: self.x - amount, ..self },
-            Direction::Right => CoordPair { x: self.x + amount, ..self },
-        }
-    }
-
-    pub fn wrapping_move_by(self, direction: Direction, amount: &T) -> Self
-    where
-        T: WrappingAdd + WrappingSub,
-    {
-        match direction {
-            Direction::Up => {
-                CoordPair { y: self.y.wrapping_sub(amount), ..self }
-            },
-            Direction::Down => {
-                CoordPair { y: self.y.wrapping_add(amount), ..self }
-            },
-            Direction::Left => {
-                CoordPair { x: self.x.wrapping_sub(amount), ..self }
-            },
-            Direction::Right => {
-                CoordPair { x: self.x.wrapping_add(amount), ..self }
-            },
-        }
-    }
-
-    pub fn saturating_move_by(self, direction: Direction, amount: &T) -> Self
-    where
-        T: SaturatingAdd + SaturatingSub,
-    {
-        match direction {
-            Direction::Up => {
-                CoordPair { y: self.y.saturating_sub(amount), ..self }
-            },
-            Direction::Down => {
-                CoordPair { y: self.y.saturating_add(amount), ..self }
-            },
-            Direction::Left => {
-                CoordPair { x: self.x.saturating_sub(amount), ..self }
-            },
-            Direction::Right => {
-                CoordPair { x: self.x.saturating_add(amount), ..self }
-            },
-        }
-    }
-
-    pub fn checked_move_by(
-        self,
-        direction: Direction,
-        amount: &T,
-    ) -> Option<Self>
-    where
-        T: CheckedAdd + CheckedSub,
-    {
-        let result = match direction {
-            Direction::Up => {
-                CoordPair { y: self.y.checked_sub(amount)?, ..self }
-            },
-            Direction::Down => {
-                CoordPair { y: self.y.checked_add(amount)?, ..self }
-            },
-            Direction::Left => {
-                CoordPair { x: self.x.checked_sub(amount)?, ..self }
-            },
-            Direction::Right => {
-                CoordPair { x: self.x.checked_add(amount)?, ..self }
-            },
-        };
-        Some(result)
-    }
-
     pub fn move_one(self, direction: Direction) -> Self
     where
         T: Add<Output = T> + Sub<Output = T> + One,
     {
-        self.move_by(direction, T::one())
+        self.move_by(DirecVector { direction, magnitude: T::one() })
     }
 
     pub fn wrapping_move(self, direction: Direction) -> Self
     where
         T: WrappingAdd + WrappingSub + One,
     {
-        self.wrapping_move_by(direction, &T::one())
+        self.wrapping_move_by(&DirecVector { direction, magnitude: T::one() })
     }
 
     pub fn saturating_move(self, direction: Direction) -> Self
     where
         T: SaturatingAdd + SaturatingSub + One,
     {
-        self.saturating_move_by(direction, &T::one())
+        self.saturating_move_by(&DirecVector { direction, magnitude: T::one() })
     }
 
     pub fn checked_move(self, direction: Direction) -> Option<Self>
     where
         T: CheckedAdd + CheckedSub + One,
     {
-        self.checked_move_by(direction, &T::one())
+        self.checked_move_by(&DirecVector { direction, magnitude: T::one() })
     }
 
     pub fn direction_to(&self, other: &Self) -> Option<Direction>
@@ -457,6 +380,80 @@ impl<T> CoordPair<T> {
             },
             _ => None,
         }
+    }
+
+    pub fn move_by<U>(self, vector: DirecVector<U>) -> Self
+    where
+        T: Add<U, Output = T> + Sub<U, Output = T>,
+    {
+        match vector.direction {
+            Direction::Up => Self { y: self.y - vector.magnitude, ..self },
+            Direction::Down => Self { y: self.y + vector.magnitude, ..self },
+            Direction::Left => Self { x: self.x - vector.magnitude, ..self },
+            Direction::Right => Self { x: self.x + vector.magnitude, ..self },
+        }
+    }
+
+    pub fn wrapping_move_by(self, vector: &DirecVector<T>) -> Self
+    where
+        T: WrappingAdd + WrappingSub,
+    {
+        match vector.direction {
+            Direction::Up => {
+                Self { y: self.y.wrapping_sub(&vector.magnitude), ..self }
+            },
+            Direction::Down => {
+                Self { y: self.y.wrapping_add(&vector.magnitude), ..self }
+            },
+            Direction::Left => {
+                Self { x: self.x.wrapping_sub(&vector.magnitude), ..self }
+            },
+            Direction::Right => {
+                Self { x: self.x.wrapping_add(&vector.magnitude), ..self }
+            },
+        }
+    }
+
+    pub fn saturating_move_by(self, vector: &DirecVector<T>) -> Self
+    where
+        T: SaturatingAdd + SaturatingSub,
+    {
+        match vector.direction {
+            Direction::Up => {
+                Self { y: self.y.saturating_sub(&vector.magnitude), ..self }
+            },
+            Direction::Down => {
+                Self { y: self.y.saturating_add(&vector.magnitude), ..self }
+            },
+            Direction::Left => {
+                Self { x: self.x.saturating_sub(&vector.magnitude), ..self }
+            },
+            Direction::Right => {
+                Self { x: self.x.saturating_add(&vector.magnitude), ..self }
+            },
+        }
+    }
+
+    pub fn checked_move_by(self, vector: &DirecVector<T>) -> Option<Self>
+    where
+        T: CheckedAdd + CheckedSub,
+    {
+        let result = match vector.direction {
+            Direction::Up => {
+                Self { y: self.y.checked_sub(&vector.magnitude)?, ..self }
+            },
+            Direction::Down => {
+                Self { y: self.y.checked_add(&vector.magnitude)?, ..self }
+            },
+            Direction::Left => {
+                Self { x: self.x.checked_sub(&vector.magnitude)?, ..self }
+            },
+            Direction::Right => {
+                Self { x: self.x.checked_add(&vector.magnitude)?, ..self }
+            },
+        };
+
+        Some(result)
     }
 
     pub fn flip_y(self) -> Self
