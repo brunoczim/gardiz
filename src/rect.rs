@@ -83,7 +83,7 @@ impl<T, S> Rect<T, S> {
     where
         S: Zero,
     {
-        self.size.is_zero()
+        self.size.x.is_zero() || self.size.y.is_zero()
     }
 
     pub fn end(self) -> CoordPair<T::Output>
@@ -277,7 +277,18 @@ impl<T> Rect<T> {
     {
         let start =
             self.start.as_ref().zip_with(other.start.as_ref(), Ord::max);
-        let end = self.wrapping_end().zip_with(other.wrapping_end(), Ord::min);
+        let end = self.wrapping_end().zip(other.wrapping_end()).zip_with(
+            start,
+            |(this, other), start| {
+                if this >= *start && other < *start {
+                    this
+                } else if other >= *start && this < *start {
+                    other
+                } else {
+                    this.min(other)
+                }
+            },
+        );
         let size = end.zip_with(start, |end, start| end.wrapping_sub(start));
         Rect { start: start.cloned(), size }
     }
@@ -295,7 +306,7 @@ impl<T> Rect<T> {
             .saturating_end_incl()
             .zip_with(other.saturating_end_incl(), Ord::min);
         let size = end.zip_with(start, |end, start| {
-            end.saturating_sub(&start.saturating_add(&T::one()))
+            end.saturating_sub(&start).saturating_add(&T::one())
         });
         Rect { start: start.cloned(), size }
     }
