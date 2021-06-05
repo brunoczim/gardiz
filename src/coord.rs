@@ -46,6 +46,7 @@ use std::{
         Mul,
         MulAssign,
         Neg,
+        Not,
         Rem,
         RemAssign,
         Sub,
@@ -76,6 +77,14 @@ impl<T> IndexMut<Axis> for CoordPair<T> {
             Axis::Y => &mut self.y,
             Axis::X => &mut self.x,
         }
+    }
+}
+
+impl<T> Not for CoordPair<T> {
+    type Output = CoordPair<T>;
+
+    fn not(self) -> Self::Output {
+        Self { x: self.y, y: self.x }
     }
 }
 

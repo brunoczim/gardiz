@@ -3,3 +3,4 @@ pub mod axis;
 pub mod direc;
 pub mod coord;
 pub mod rect;
+pub mod set;
