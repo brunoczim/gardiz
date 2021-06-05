@@ -1,21 +1,22 @@
-use crate::{coord::CoordPair, direc::Direction};
-use std::{
-    collections::{btree_map, btree_set, BTreeMap, BTreeSet},
-    hash::Hash,
-    ops::Bound,
+use crate::{
+    coord::{CoordPair, CoordRef},
+    direc::Direction,
+    map,
+    map::Map,
 };
+use std::iter::FromIterator;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set<T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
-    neighbours: CoordPair<BTreeMap<T, BTreeSet<T>>>,
+    inner: Map<T, ()>,
 }
 
 impl<T> Default for Set<T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
     fn default() -> Self {
         Self::new()
@@ -24,291 +25,179 @@ where
 
 impl<T> Set<T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
     pub fn new() -> Self {
-        Set { neighbours: CoordPair::from_axes(|_| BTreeMap::new()) }
+        Set { inner: Map::new() }
     }
 
-    pub fn len(&self) -> usize {
-        self.neighbours.x.len()
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
     }
 
-    pub fn contains(&self, point: &CoordPair<T>) -> bool {
-        self.neighbours
-            .x
-            .get(&point.x)
-            .map_or(false, |ys| ys.contains(&point.y))
+    pub fn contains<C>(&self, point: C) -> bool
+    where
+        C: CoordRef<T>,
+    {
+        self.inner.contains(point)
     }
 
-    pub fn neighbour<'found>(
-        &'found self,
-        point: &'found CoordPair<T>,
+    pub fn neighbours<C>(&self, point: C, direction: Direction) -> Neighbours<T>
+    where
+        C: CoordRef<T>,
+    {
+        Neighbours { inner: self.inner.neighbours(point, direction) }
+    }
+
+    pub fn first_neighbour<C>(
+        &self,
+        point: C,
         direction: Direction,
-    ) -> Option<CoordPair<&'found T>> {
-        match direction {
-            Direction::Up => self
-                .neighbours
-                .x
-                .get(&point.x)?
-                .range(.. &point.y)
-                .next_back()
-                .map(|coord_y| CoordPair { x: &point.x, y: coord_y }),
-
-            Direction::Down => self
-                .neighbours
-                .x
-                .get(&point.x)?
-                .range((Bound::Excluded(&point.y), Bound::Unbounded))
-                .next()
-                .map(|coord_y| CoordPair { x: &point.x, y: coord_y }),
-
-            Direction::Left => self
-                .neighbours
-                .y
-                .get(&point.y)?
-                .range(.. &point.x)
-                .next_back()
-                .map(|coord_x| CoordPair { y: &point.y, x: coord_x }),
-
-            Direction::Right => self
-                .neighbours
-                .y
-                .get(&point.y)?
-                .range((Bound::Excluded(&point.x), Bound::Unbounded))
-                .next()
-                .map(|coord_x| CoordPair { y: &point.y, x: coord_x }),
-        }
+    ) -> Option<CoordPair<&T>>
+    where
+        C: CoordRef<T>,
+    {
+        self.inner.first_neighbour(point, direction)
     }
 
-    pub fn last_neighbour<'found>(
-        &'found self,
-        point: &'found CoordPair<T>,
+    pub fn last_neighbour<C>(
+        &self,
+        point: C,
         direction: Direction,
-    ) -> Option<CoordPair<&'found T>> {
-        match direction {
-            Direction::Up => self
-                .neighbours
-                .x
-                .get(&point.x)?
-                .range(.. &point.y)
-                .next()
-                .map(|coord_y| CoordPair { x: &point.x, y: coord_y }),
-
-            Direction::Down => self
-                .neighbours
-                .x
-                .get(&point.x)?
-                .range((Bound::Excluded(&point.y), Bound::Unbounded))
-                .next_back()
-                .map(|coord_y| CoordPair { x: &point.x, y: coord_y }),
-
-            Direction::Left => self
-                .neighbours
-                .y
-                .get(&point.y)?
-                .range(.. &point.x)
-                .next()
-                .map(|coord_x| CoordPair { y: &point.y, x: coord_x }),
-
-            Direction::Right => self
-                .neighbours
-                .y
-                .get(&point.y)?
-                .range((Bound::Excluded(&point.x), Bound::Unbounded))
-                .next_back()
-                .map(|coord_x| CoordPair { y: &point.y, x: coord_x }),
-        }
+    ) -> Option<CoordPair<&T>>
+    where
+        C: CoordRef<T>,
+    {
+        self.inner.last_neighbour(point, direction)
     }
 
-    pub fn insert(&mut self, point: CoordPair<T>)
+    pub fn insert(&mut self, point: CoordPair<T>) -> bool
     where
         T: Clone,
     {
-        let inner_tables = match self
-            .neighbours
-            .as_mut()
-            .zip_with(point.as_ref(), |table, key| table.get_mut(key))
-            .transpose()
-        {
-            Some(entries) => entries,
-            None => self
-                .neighbours
-                .as_mut()
-                .zip_with(point.clone(), |table, key| {
-                    table.entry(key).or_default()
-                }),
-        };
-
-        inner_tables.zip_with(!point, |table, value| table.insert(value));
+        self.inner.insert(point, ()).is_some()
     }
 
-    pub fn remove(&mut self, point: &CoordPair<T>) -> bool {
-        let table_pairs = point.as_ref().zip(!point.as_ref());
-        let removed = self.neighbours.as_mut().zip_with(
-            table_pairs,
-            |table, (key, value)| {
-                let inner_table = match table.get_mut(key) {
-                    Some(table) => table,
-                    None => return false,
-                };
-
-                let removed = inner_table.remove(value);
-                if removed {
-                    table.remove(&key);
-                }
-                removed
-            },
-        );
-
-        removed.x && removed.y
+    pub fn remove<C>(&mut self, point: C) -> bool
+    where
+        C: CoordRef<T>,
+    {
+        self.inner.remove(point).is_some()
     }
 
     pub fn rows(&self) -> Rows<T> {
-        Rows { outer: self.neighbours.y.iter(), front: None, back: None }
+        Rows { inner: self.inner.rows() }
     }
 
     pub fn columns(&self) -> Columns<T> {
-        Columns { outer: self.neighbours.x.iter(), front: None, back: None }
+        Columns { inner: self.inner.columns() }
+    }
+}
+
+impl<T> Extend<CoordPair<T>> for Set<T>
+where
+    T: Ord + Clone,
+{
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = CoordPair<T>>,
+    {
+        self.inner.extend(iter.into_iter().map(|key| (key, ())));
+    }
+}
+
+impl<T> FromIterator<CoordPair<T>> for Set<T>
+where
+    T: Ord + Clone,
+{
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = CoordPair<T>>,
+    {
+        Self { inner: iter.into_iter().map(|key| (key, ())).collect() }
+    }
+}
+
+#[derive(Debug)]
+pub struct Neighbours<'set, T>
+where
+    T: Ord,
+{
+    inner: map::Neighbours<'set, T, ()>,
+}
+
+impl<'set, T> Iterator for Neighbours<'set, T>
+where
+    T: Ord,
+{
+    type Item = CoordPair<&'set T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(key, _)| key)
+    }
+}
+
+impl<'set, T> DoubleEndedIterator for Neighbours<'set, T>
+where
+    T: Ord,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().map(|(key, _)| key)
     }
 }
 
 #[derive(Debug)]
 pub struct Rows<'set, T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
-    outer: btree_map::Iter<'set, T, BTreeSet<T>>,
-    front: Option<(&'set T, btree_set::Iter<'set, T>)>,
-    back: Option<(&'set T, btree_set::Iter<'set, T>)>,
+    inner: map::Rows<'set, T, ()>,
 }
 
 impl<'set, T> Iterator for Rows<'set, T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
     type Item = CoordPair<&'set T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some((y, inner)) = &mut self.front {
-                match inner.next() {
-                    Some(x) => break Some(CoordPair { x, y }),
-                    None => self.front = None,
-                }
-            }
-            match self.outer.next() {
-                Some((y, inner)) => self.front = Some((y, inner.iter())),
-                None => {
-                    let (y, inner) = self.back.as_mut()?;
-                    match inner.next() {
-                        Some(x) => break Some(CoordPair { x, y }),
-                        None => {
-                            self.back = None;
-                            break None;
-                        },
-                    }
-                },
-            }
-        }
+        self.inner.next().map(|(key, _)| key)
     }
 }
 
 impl<'set, T> DoubleEndedIterator for Rows<'set, T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some((y, inner)) = &mut self.back {
-                match inner.next() {
-                    Some(x) => break Some(CoordPair { x, y }),
-                    None => self.back = None,
-                }
-            }
-            match self.outer.next() {
-                Some((y, inner)) => self.back = Some((y, inner.iter())),
-                None => {
-                    let (y, inner) = self.front.as_mut()?;
-                    match inner.next() {
-                        Some(x) => break Some(CoordPair { x, y }),
-                        None => {
-                            self.front = None;
-                            break None;
-                        },
-                    }
-                },
-            }
-        }
+        self.inner.next_back().map(|(key, _)| key)
     }
 }
 
 #[derive(Debug)]
 pub struct Columns<'set, T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
-    outer: btree_map::Iter<'set, T, BTreeSet<T>>,
-    front: Option<(&'set T, btree_set::Iter<'set, T>)>,
-    back: Option<(&'set T, btree_set::Iter<'set, T>)>,
+    inner: map::Columns<'set, T, ()>,
 }
 
 impl<'set, T> Iterator for Columns<'set, T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
     type Item = CoordPair<&'set T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some((x, inner)) = &mut self.front {
-                match inner.next() {
-                    Some(y) => break Some(CoordPair { x, y }),
-                    None => self.front = None,
-                }
-            }
-            match self.outer.next() {
-                Some((x, inner)) => self.front = Some((x, inner.iter())),
-                None => {
-                    let (x, inner) = self.back.as_mut()?;
-                    match inner.next() {
-                        Some(y) => break Some(CoordPair { x, y }),
-                        None => {
-                            self.back = None;
-                            break None;
-                        },
-                    }
-                },
-            }
-        }
+        self.inner.next().map(|(key, _)| key)
     }
 }
 
 impl<'set, T> DoubleEndedIterator for Columns<'set, T>
 where
-    T: Ord + Hash,
+    T: Ord,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some((x, inner)) = &mut self.back {
-                match inner.next() {
-                    Some(y) => break Some(CoordPair { x, y }),
-                    None => self.back = None,
-                }
-            }
-            match self.outer.next() {
-                Some((x, inner)) => self.back = Some((x, inner.iter())),
-                None => {
-                    let (x, inner) = self.front.as_mut()?;
-                    match inner.next() {
-                        Some(y) => break Some(CoordPair { x, y }),
-                        None => {
-                            self.front = None;
-                            break None;
-                        },
-                    }
-                },
-            }
-        }
+        self.inner.next_back().map(|(key, _)| key)
     }
 }

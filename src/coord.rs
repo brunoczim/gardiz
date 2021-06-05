@@ -809,3 +809,80 @@ where
         Self::from_axes(|_| T::max_value())
     }
 }
+
+impl<'this, T> From<&'this CoordPair<T>> for CoordPair<&'this T> {
+    fn from(input: &'this CoordPair<T>) -> Self {
+        input.as_ref()
+    }
+}
+
+impl<'this, T> From<&'this mut CoordPair<T>> for CoordPair<&'this mut T> {
+    fn from(input: &'this mut CoordPair<T>) -> Self {
+        input.as_mut()
+    }
+}
+
+pub trait CoordRef<T> {
+    fn as_coord_ref(&self) -> CoordPair<&T>;
+}
+
+impl<T> CoordRef<T> for CoordPair<T> {
+    fn as_coord_ref(&self) -> CoordPair<&T> {
+        self.as_ref()
+    }
+}
+
+impl<'this, T> CoordRef<T> for CoordPair<&'this T> {
+    fn as_coord_ref(&self) -> CoordPair<&T> {
+        *self
+    }
+}
+
+impl<'this, T> CoordRef<T> for CoordPair<&'this mut T> {
+    fn as_coord_ref(&self) -> CoordPair<&T> {
+        self.as_ref().map(|coord| &**coord)
+    }
+}
+
+impl<'this, T, C> CoordRef<T> for &'this C
+where
+    C: CoordRef<T>,
+{
+    fn as_coord_ref(&self) -> CoordPair<&T> {
+        (**self).as_coord_ref()
+    }
+}
+
+impl<'this, T, C> CoordRef<T> for &'this mut C
+where
+    C: CoordRef<T>,
+{
+    fn as_coord_ref(&self) -> CoordPair<&T> {
+        (**self).as_coord_ref()
+    }
+}
+
+pub trait CoordMut<T>: CoordRef<T> {
+    fn as_coord_mut(&mut self) -> CoordPair<&mut T>;
+}
+
+impl<T> CoordMut<T> for CoordPair<T> {
+    fn as_coord_mut(&mut self) -> CoordPair<&mut T> {
+        self.as_mut()
+    }
+}
+
+impl<'this, T> CoordMut<T> for CoordPair<&'this mut T> {
+    fn as_coord_mut(&mut self) -> CoordPair<&mut T> {
+        self.as_mut().map(|elem| &mut **elem)
+    }
+}
+
+impl<'this, T, C> CoordMut<T> for &'this mut C
+where
+    C: CoordMut<T>,
+{
+    fn as_coord_mut(&mut self) -> CoordPair<&mut T> {
+        (**self).as_coord_mut()
+    }
+}
