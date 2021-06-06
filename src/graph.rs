@@ -2,8 +2,8 @@ use crate::{
     coord::{CoordPair, CoordRef},
     direc::{DirecMap, Direction},
     map::Map,
-    set::Set,
 };
+use std::collections::BTreeSet;
 //use priority_queue::PriorityQueue;
 
 pub type VertexEdges = DirecMap<bool>;
@@ -13,7 +13,7 @@ pub struct Graph<T>
 where
     T: Ord,
 {
-    edges: Map<CoordPair<T>, VertexEdges>,
+    edges: Map<T, VertexEdges>,
 }
 
 impl<T> Default for Graph<T>
@@ -46,6 +46,10 @@ where
         }
     }
 
+    pub fn edges(&self) -> &Map<T, DirecMap<bool>> {
+        &self.edges
+    }
+
     pub fn vertex_edges<C>(&self, vertex: C) -> Option<VertexEdges>
     where
         C: CoordRef<T>,
@@ -53,13 +57,15 @@ where
         self.edges.get(&vertex.as_coord_ref()).copied()
     }
 
-    pub fn connects(
-        &self,
-        vertex_a: &CoordPair<T>,
-        vertex_b: &CoordPair<T>,
-    ) -> bool {
-        let direc = match vertex_a.direction_to(&vertex_b) {
-            Some(direc) => direc,
+    pub fn connected<Ca, Cb>(&self, vertex_a: Ca, vertex_b: Cb) -> bool
+    where
+        Ca: CoordRef<T>,
+        Cb: CoordRef<T>,
+    {
+        let vertex_a = vertex_a.as_coord_ref();
+        let vertex_b = vertex_b.as_coord_ref();
+        let direction = match vertex_a.direction_to(&vertex_b) {
+            Some(direction) => direction,
             None => return false,
         };
         let edges = match self.vertex_edges(vertex_a) {
@@ -67,127 +73,144 @@ where
             None => return false,
         };
 
-        edges[direc]
-            && self.vertices().neighbour(vertex_a, direc)
-                == Some(vertex_b.as_ref())
+        edges[direction] && {
+            let neighbour = self.edges.first_neighbour(vertex_a, direction);
+            neighbour == Some(vertex_b)
+        }
     }
 
     pub fn insert_vertex(&mut self, vertex: CoordPair<T>)
     where
         T: Clone,
     {
-        self.vertices.insert(vertex.clone());
-
-        let mut edges =
-            DirecMap { up: false, left: false, down: false, right: false };
+        let mut edges = DirecMap::from_direcs(|_| false);
 
         for direction in Direction::iter() {
             if let Some(neighbour) =
-                self.vertices().neighbour(&vertex, direction)
+                self.edges.first_neighbour(&vertex, direction)
             {
                 let neighbour_edges =
                     self.vertex_edges(neighbour).expect("Inconsistent graph");
-                if neighbour_edges[!direc] {
-                    edges[direc] = true;
+                if neighbour_edges[!direction] {
+                    edges[direction] = true;
                 }
             }
         }
 
-        self.edges.insert(vertex, edges);
+        self.edges.insert(vertex.clone(), edges);
     }
 
-    pub fn connect(
-        &mut self,
-        vertex_a: CoordPair<T>,
-        vertex_b: CoordPair<T>,
-    ) -> bool {
-        let direc = vertex_a.direc_to(vertex_b).expect("no straight direction");
+    pub fn connect<Ca, Cb>(&mut self, vertex_a: Ca, vertex_b: Cb) -> bool
+    where
+        Ca: CoordRef<T>,
+        Cb: CoordRef<T>,
+    {
+        let vertex_a = vertex_a.as_coord_ref();
+        let vertex_b = vertex_b.as_coord_ref();
+        let direction =
+            vertex_a.direction_to(&vertex_b).expect("no straight direction");
 
-        if self.vertices().neighbour(vertex_a, direc) != Some(vertex_b) {
+        if self.edges.first_neighbour(vertex_a, direction) != Some(vertex_b) {
             panic!("Vertices are not neighbours")
         }
 
-        let edges = self.edges.get_mut(&vertex_a).expect("Invalid vertex");
-        if edges[direc] {
+        let mut edges = self.vertex_edges(vertex_a).expect("Invalid vertex");
+        if edges[direction] {
             false
         } else {
-            edges[direc] = true;
-            let edges = self.edges.get_mut(&vertex_b).expect("Invalid vertex");
-            edges[!direc] = true;
+            edges[direction] = true;
+            self.edges.update(vertex_a, edges);
+            let mut edges =
+                self.vertex_edges(vertex_b).expect("Invalid vertex");
+            edges[!direction] = true;
+            self.edges.update(vertex_b, edges);
             true
         }
     }
 
-    pub fn disconnect(
-        &mut self,
-        vertex_a: CoordPair<T>,
-        vertex_b: CoordPair<T>,
-    ) -> bool {
-        let direc = vertex_a.direc_to(vertex_b).expect("no straight direction");
+    pub fn disconnect<Ca, Cb>(&mut self, vertex_a: Ca, vertex_b: Cb) -> bool
+    where
+        Ca: CoordRef<T>,
+        Cb: CoordRef<T>,
+    {
+        let vertex_a = vertex_a.as_coord_ref();
+        let vertex_b = vertex_b.as_coord_ref();
+        let direction =
+            vertex_a.direction_to(&vertex_b).expect("no straight direction");
 
-        if self.vertices().neighbour(vertex_a, direc) != Some(vertex_b) {
+        if self.edges.first_neighbour(vertex_a, direction) != Some(vertex_b) {
             panic!("Vertices are not neighbours")
         }
 
-        let edges = self.edges.get_mut(&vertex_a).expect("Invalid vertex");
-        if !edges[direc] {
-            false
-        } else {
-            edges[direc] = false;
-            let edges = self.edges.get_mut(&vertex_b).expect("Invalid vertex");
-            edges[!direc] = false;
+        let mut edges = self.vertex_edges(vertex_a).expect("Invalid vertex");
+        if edges[direction] {
+            edges[direction] = false;
+            self.edges.update(vertex_a, edges);
+            let mut edges =
+                self.vertex_edges(vertex_b).expect("Invalid vertex");
+            edges[!direction] = false;
+            self.edges.update(vertex_b, edges);
             true
+        } else {
+            false
         }
     }
 
-    pub fn remove_vertex(&mut self, vertex: CoordPair<T>) -> bool {
-        let edges = match self.edges.remove(&vertex) {
+    pub fn remove_vertex<C>(&mut self, vertex: C) -> bool
+    where
+        C: CoordRef<T>,
+        T: Clone,
+    {
+        let vertex = vertex.as_coord_ref();
+        let edges = match self.edges.remove(vertex) {
             Some(edges) => edges,
             None => return false,
         };
-        for direc in Direction::iter() {
-            if let Some(neighbour) = self.vertices().neighbour(vertex, direc) {
-                if !edges[direc] || !edges[!direc] {
-                    let neighbour_edges = self
-                        .edges
-                        .get_mut(&neighbour)
-                        .expect("Inconsistent graph");
-                    neighbour_edges[direc] = false;
+        for direction in Direction::iter() {
+            if let Some((neighbour, neighbour_edges)) =
+                self.edges.neighbours(vertex, direction).next().clone()
+            {
+                let neighbour = neighbour.cloned();
+                let mut neighbour_edges = *neighbour_edges;
+                if !edges[direction] || !edges[!direction] {
+                    neighbour_edges[direction] = false;
+                    self.edges.update(&neighbour, neighbour_edges);
                 }
             }
         }
-
-        self.vertices.remove(vertex);
         true
     }
 
-    pub fn remove_vertex_with_edges(&mut self, vertex: CoordPair<T>) -> bool {
-        let edges = match self.edges.remove(&vertex) {
+    pub fn remove_with_edges<C>(&mut self, vertex: C) -> bool
+    where
+        C: CoordRef<T>,
+        T: Clone,
+    {
+        let vertex = vertex.as_coord_ref();
+        let edges = match self.edges.remove(vertex) {
             Some(edges) => edges,
             None => return false,
         };
-        for direc in Direction::iter() {
-            if let Some(neighbour) = self.vertices().neighbour(vertex, direc) {
-                if edges[direc] {
-                    let neighbour_edges = self
-                        .edges
-                        .get_mut(&neighbour)
-                        .expect("Inconsistent graph");
-                    neighbour_edges[direc] = false;
+        for direction in Direction::iter() {
+            if let Some((neighbour, neighbour_edges)) =
+                self.edges.neighbours(vertex, direction).next().clone()
+            {
+                let neighbour = neighbour.cloned();
+                let mut neighbour_edges = *neighbour_edges;
+                if edges[direction] {
+                    neighbour_edges[direction] = false;
+                    self.edges.update(&neighbour, neighbour_edges);
                 }
             }
         }
-
-        self.vertices.remove(vertex);
         true
-    }
-
-    pub fn edges(&self) -> Edges<T> {
-        Edges { graph: self, inner: self.edges.iter(), right: None, down: None }
     }
 
     pub fn components(&self) -> Components<T> {
-        Components { graph: self, unvisited: self.vertices().rows().collect() }
+        Components {
+            graph: self,
+            unvisited: self.edges.rows().map(|(key, _)| key).collect(),
+        }
     }
 
     /*
@@ -320,79 +343,31 @@ struct AStarCost<T> {
 */
 
 #[derive(Debug, Clone)]
-pub struct Edges<'graph, T>
-where
-    T: Ord,
-{
-    graph: &'graph Graph<T>,
-    inner: hash_map::Iter<'graph, CoordPair<T>, VertexEdges>,
-    right: Option<CoordPair<T>>,
-    down: Option<CoordPair<T>>,
-}
-
-impl<'graph, T> Iterator for Edges<'graph, T>
-where
-    T: Ord,
-{
-    type Item = (CoordPair<T>, CoordPair<T>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(right) = self.right.take() {
-                break Some((
-                    right,
-                    self.graph
-                        .vertices()
-                        .neighbour(right, Direction::Right)
-                        .unwrap(),
-                ));
-            }
-            if let Some(down) = self.down.take() {
-                break Some((
-                    down,
-                    self.graph
-                        .vertices()
-                        .neighbour(down, Direction::Down)
-                        .unwrap(),
-                ));
-            }
-            let (&coord, &map) = self.inner.next()?;
-            if map.right {
-                self.right = Some(coord);
-            }
-            if map.down {
-                self.down = Some(coord);
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct Components<'graph, T>
 where
     T: Ord,
 {
     graph: &'graph Graph<T>,
-    unvisited: BTreeSet<CoordPair<T>>,
+    unvisited: BTreeSet<CoordPair<&'graph T>>,
 }
 
 impl<'graph, T> Iterator for Components<'graph, T>
 where
-    T: Ord,
+    T: Ord + Clone,
 {
-    type Item = Graph<T>;
+    type Item = Graph<&'graph T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let start = *self.unvisited.range(..).next()?;
+        let start = *self.unvisited.iter().next()?;
         let mut stack = vec![start];
         let mut graph = Graph::new();
 
         graph.insert_vertex(start);
         while let Some(node) = stack.pop() {
             if self.unvisited.remove(&node) {
-                for direc in Direction::iter() {
+                for direction in Direction::iter() {
                     if let Some(neighbour) =
-                        self.graph.vertices().neighbour(node, direc)
+                        self.graph.edges.first_neighbour(node, direction)
                     {
                         graph.insert_vertex(neighbour);
                         graph.connect(node, neighbour);

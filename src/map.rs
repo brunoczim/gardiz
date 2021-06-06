@@ -5,6 +5,7 @@ use crate::{
 use std::{
     collections::{btree_map, BTreeMap},
     iter::FromIterator,
+    mem,
     ops::Bound,
 };
 
@@ -121,6 +122,64 @@ where
         old.x
     }
 
+    pub fn create(&mut self, point: CoordPair<K>, value: V) -> Result<(), &V>
+    where
+        K: Clone,
+        V: Clone,
+    {
+        let values = CoordPair { x: value.clone(), y: value };
+        let entries = (!point.clone()).zip(values);
+        let result = self
+            .neighbours
+            .as_mut()
+            .zip_with(point, |table, key| table.entry(key))
+            .zip_with(entries, |table_entry, (key, value)| match table_entry {
+                btree_map::Entry::Vacant(table_entry) => {
+                    let mut inner_table = BTreeMap::new();
+                    inner_table.insert(key, value);
+                    table_entry.insert(inner_table);
+                    Ok(())
+                },
+
+                btree_map::Entry::Occupied(table_entry) => {
+                    match table_entry.get_mut().entry(key) {
+                        btree_map::Entry::Vacant(inner_entry) => {
+                            inner_entry.insert(value);
+                            Ok(())
+                        },
+                        btree_map::Entry::Occupied(inner_entry) => {
+                            Err(inner_entry.get())
+                        },
+                    }
+                },
+            });
+        result.x
+    }
+
+    pub fn update<C>(&mut self, point: C, value: V) -> Result<V, V>
+    where
+        C: CoordRef<K>,
+        V: Clone,
+    {
+        let point = point.as_coord_ref();
+        let inner_tables = self
+            .neighbours
+            .as_mut()
+            .zip_with(point, |table, key| table.get_mut(key))
+            .transpose()
+            .ok_or(value)?;
+
+        let values = CoordPair { x: value.clone(), y: value };
+        let old = (!point).zip(values).zip_with(
+            inner_tables,
+            |(key, value), table| match table.get_mut(key) {
+                Some(entry) => Ok(mem::replace(entry, value)),
+                None => Err(value),
+            },
+        );
+        old.x
+    }
+
     pub fn remove<C>(&mut self, point: C) -> Option<V>
     where
         C: CoordRef<K>,
@@ -146,7 +205,13 @@ where
     }
 
     pub fn columns(&self) -> Columns<K, V> {
-        Columns { outer: self.neighbours.x.iter(), front: None, back: None }
+        Columns {
+            transposed: Rows {
+                outer: self.neighbours.x.iter(),
+                front: None,
+                back: None,
+            },
+        }
     }
 }
 
@@ -376,9 +441,7 @@ pub struct Columns<'map, K, V>
 where
     K: Ord,
 {
-    outer: btree_map::Iter<'map, K, BTreeMap<K, V>>,
-    front: Option<(&'map K, btree_map::Iter<'map, K, V>)>,
-    back: Option<(&'map K, btree_map::Iter<'map, K, V>)>,
+    transposed: Rows<'map, K, V>,
 }
 
 impl<'map, K, V> Iterator for Columns<'map, K, V>
@@ -388,31 +451,7 @@ where
     type Item = (CoordPair<&'map K>, &'map V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some((x, inner)) = &mut self.front {
-                match inner.next() {
-                    Some((y, value)) => {
-                        break Some((CoordPair { x, y }, value))
-                    },
-                    None => self.front = None,
-                }
-            }
-            match self.outer.next() {
-                Some((x, inner)) => self.front = Some((x, inner.iter())),
-                None => {
-                    let (x, inner) = self.back.as_mut()?;
-                    match inner.next() {
-                        Some((y, value)) => {
-                            break Some((CoordPair { x, y }, value))
-                        },
-                        None => {
-                            self.back = None;
-                            break None;
-                        },
-                    }
-                },
-            }
-        }
+        self.transposed.next().map(|(coord, value)| (!coord, value))
     }
 }
 
@@ -421,30 +460,6 @@ where
     K: Ord,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some((x, inner)) = &mut self.back {
-                match inner.next() {
-                    Some((y, value)) => {
-                        break Some((CoordPair { x, y }, value))
-                    },
-                    None => self.back = None,
-                }
-            }
-            match self.outer.next() {
-                Some((x, inner)) => self.back = Some((x, inner.iter())),
-                None => {
-                    let (x, inner) = self.front.as_mut()?;
-                    match inner.next() {
-                        Some((y, value)) => {
-                            break Some((CoordPair { x, y }, value))
-                        },
-                        None => {
-                            self.front = None;
-                            break None;
-                        },
-                    }
-                },
-            }
-        }
+        self.transposed.next_back().map(|(coord, value)| (!coord, value))
     }
 }
