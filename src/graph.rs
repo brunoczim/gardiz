@@ -60,7 +60,7 @@ where
         self.edges.get(vertex).copied()
     }
 
-    pub fn connected<U>(
+    pub fn are_connected<U>(
         &self,
         vertex_a: CoordPair<&U>,
         vertex_b: CoordPair<&U>,
@@ -85,7 +85,23 @@ where
         }
     }
 
-    pub fn insert_vertex(&mut self, vertex: CoordPair<T>)
+    pub fn connected_at<U>(
+        &self,
+        vertex: CoordPair<&U>,
+        direction: Direction,
+    ) -> Option<CoordPair<&T>>
+    where
+        T: Borrow<U>,
+        U: Ord,
+    {
+        if self.vertex_edges(vertex)?[direction] {
+            self.edges.first_neighbour(vertex, direction)
+        } else {
+            None
+        }
+    }
+
+    pub fn create_vertex(&mut self, vertex: CoordPair<T>) -> bool
     where
         T: Clone,
     {
@@ -103,20 +119,27 @@ where
             }
         }
 
-        self.edges.insert(vertex.clone(), edges);
+        self.edges.create(vertex.clone(), edges)
     }
 
-    pub fn connect<Ca, Cb>(&mut self, vertex_a: Ca, vertex_b: Cb) -> bool
+    pub fn connect<U>(
+        &mut self,
+        vertex_a: CoordPair<&U>,
+        vertex_b: CoordPair<&U>,
+    ) -> bool
     where
-        Ca: CoordRef<T>,
-        Cb: CoordRef<T>,
+        U: Ord,
+        T: Borrow<U>,
     {
-        let vertex_a = vertex_a.as_coord_ref();
-        let vertex_b = vertex_b.as_coord_ref();
         let direction =
             vertex_a.direction_to(&vertex_b).expect("no straight direction");
 
-        if self.edges.first_neighbour(vertex_a, direction) != Some(vertex_b) {
+        let first_neighbour = self
+            .edges
+            .first_neighbour(vertex_a, direction)
+            .map(|neighbour| neighbour.map(Borrow::borrow));
+
+        if first_neighbour != Some(vertex_b) {
             panic!("Vertices are not neighbours")
         }
 
@@ -134,17 +157,24 @@ where
         }
     }
 
-    pub fn disconnect<Ca, Cb>(&mut self, vertex_a: Ca, vertex_b: Cb) -> bool
+    pub fn disconnect<U>(
+        &mut self,
+        vertex_a: CoordPair<&U>,
+        vertex_b: CoordPair<&U>,
+    ) -> bool
     where
-        Ca: CoordRef<T>,
-        Cb: CoordRef<T>,
+        U: Ord,
+        T: Borrow<U>,
     {
-        let vertex_a = vertex_a.as_coord_ref();
-        let vertex_b = vertex_b.as_coord_ref();
         let direction =
             vertex_a.direction_to(&vertex_b).expect("no straight direction");
 
-        if self.edges.first_neighbour(vertex_a, direction) != Some(vertex_b) {
+        let first_neighbour = self
+            .edges
+            .first_neighbour(vertex_a, direction)
+            .map(|neighbour| neighbour.map(Borrow::borrow));
+
+        if first_neighbour != Some(vertex_b) {
             panic!("Vertices are not neighbours")
         }
 
@@ -178,8 +208,8 @@ where
             {
                 let neighbour = neighbour.cloned();
                 let mut neighbour_edges = *neighbour_edges;
-                if !edges[direction] || !edges[!direction] {
-                    neighbour_edges[direction] = false;
+                if !edges[!direction] {
+                    neighbour_edges[!direction] = false;
                     let _ = self
                         .edges
                         .update::<T>(neighbour.as_ref(), neighbour_edges);
@@ -206,7 +236,7 @@ where
                 let neighbour = neighbour.cloned();
                 let mut neighbour_edges = *neighbour_edges;
                 if edges[direction] {
-                    neighbour_edges[direction] = false;
+                    neighbour_edges[!direction] = false;
                     let _ = self
                         .edges
                         .update::<T>(neighbour.as_ref(), neighbour_edges);
@@ -244,14 +274,14 @@ where
         let mut stack = vec![start];
         let mut graph = Graph::new();
 
-        graph.insert_vertex(start);
+        graph.create_vertex(start);
         while let Some(node) = stack.pop() {
             if self.unvisited.remove(&node) {
                 for direction in Direction::iter() {
                     if let Some(neighbour) =
-                        self.graph.edges.first_neighbour(node, direction)
+                        self.graph.connected_at(node, direction)
                     {
-                        graph.insert_vertex(neighbour);
+                        graph.create_vertex(neighbour);
                         graph.connect(node, neighbour);
                         stack.push(neighbour);
                     }
