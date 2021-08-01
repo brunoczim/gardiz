@@ -1,10 +1,8 @@
-use crate::{
-    coord::{CoordPair, CoordRef},
-    direc::Direction,
-    map,
-    map::Map,
-};
-use std::iter::FromIterator;
+#[cfg(test)]
+mod test;
+
+use crate::{coord::CoordPair, direc::Direction, map, map::Map};
+use std::{borrow::Borrow, iter::FromIterator};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set<T>
@@ -35,38 +33,46 @@ where
         self.inner.is_empty()
     }
 
-    pub fn contains<C>(&self, point: C) -> bool
+    pub fn contains<U>(&self, point: CoordPair<&U>) -> bool
     where
-        C: CoordRef<T>,
+        T: Borrow<U>,
+        U: Ord,
     {
         self.inner.contains(point)
     }
 
-    pub fn neighbours<C>(&self, point: C, direction: Direction) -> Neighbours<T>
+    pub fn neighbours<U>(
+        &self,
+        point: CoordPair<&U>,
+        direction: Direction,
+    ) -> Neighbours<T>
     where
-        C: CoordRef<T>,
+        T: Borrow<U>,
+        U: Ord,
     {
         Neighbours { inner: self.inner.neighbours(point, direction) }
     }
 
-    pub fn first_neighbour<C>(
+    pub fn first_neighbour<U>(
         &self,
-        point: C,
+        point: CoordPair<&U>,
         direction: Direction,
     ) -> Option<CoordPair<&T>>
     where
-        C: CoordRef<T>,
+        U: Ord,
+        T: Borrow<U>,
     {
         self.inner.first_neighbour(point, direction)
     }
 
-    pub fn last_neighbour<C>(
+    pub fn last_neighbour<U>(
         &self,
-        point: C,
+        point: CoordPair<&U>,
         direction: Direction,
     ) -> Option<CoordPair<&T>>
     where
-        C: CoordRef<T>,
+        U: Ord,
+        T: Borrow<U>,
     {
         self.inner.last_neighbour(point, direction)
     }
@@ -75,12 +81,13 @@ where
     where
         T: Clone,
     {
-        self.inner.insert(point, ()).is_some()
+        self.inner.insert(point, ()).is_none()
     }
 
-    pub fn remove<C>(&mut self, point: C) -> bool
+    pub fn remove<U>(&mut self, point: CoordPair<&U>) -> bool
     where
-        C: CoordRef<T>,
+        U: Ord,
+        T: Borrow<U>,
     {
         self.inner.remove(point).is_some()
     }

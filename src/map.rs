@@ -1,8 +1,12 @@
+#[cfg(test)]
+mod test;
+
 use crate::{
     coord::{CoordPair, CoordRef},
     direc::Direction,
 };
 use std::{
+    borrow::Borrow,
     collections::{btree_map, BTreeMap},
     iter::FromIterator,
     mem,
@@ -38,57 +42,57 @@ where
         self.neighbours.x.is_empty()
     }
 
-    pub fn get<C>(&self, point: C) -> Option<&V>
+    pub fn get<Q>(&self, point: CoordPair<&Q>) -> Option<&V>
     where
-        C: CoordRef<K>,
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        self.neighbours.x.get(point.x).and_then(|ys| ys.get(&point.y))
+    }
+
+    pub fn contains<Q>(&self, point: CoordPair<&Q>) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Ord,
     {
         self.neighbours
             .x
-            .get(point.as_coord_ref().x)
-            .and_then(|ys| ys.get(point.as_coord_ref().y))
+            .get(point.x)
+            .map_or(false, |ys| ys.contains_key(&point.y))
     }
 
-    pub fn contains<C>(&self, point: C) -> bool
-    where
-        C: CoordRef<K>,
-    {
-        self.neighbours
-            .x
-            .get(point.as_coord_ref().x)
-            .map_or(false, |ys| ys.contains_key(point.as_coord_ref().y))
-    }
-
-    pub fn neighbours<C>(
+    pub fn neighbours<Q>(
         &self,
-        point: C,
+        point: CoordPair<&Q>,
         direction: Direction,
     ) -> Neighbours<K, V>
     where
-        C: CoordRef<K>,
+        K: Borrow<Q>,
+        Q: Ord,
     {
-        Neighbours {
-            inner: NeighboursInner::new(self, point.as_coord_ref(), direction),
-        }
+        Neighbours { inner: NeighboursInner::new(self, point, direction) }
     }
 
-    pub fn first_neighbour<C>(
+    pub fn first_neighbour<Q>(
         &self,
-        point: C,
+        point: CoordPair<&Q>,
         direction: Direction,
     ) -> Option<CoordPair<&K>>
     where
-        C: CoordRef<K>,
+        K: Borrow<Q>,
+        Q: Ord,
     {
         self.neighbours(point, direction).next().map(|(key, _)| key)
     }
 
-    pub fn last_neighbour<C>(
+    pub fn last_neighbour<Q>(
         &self,
-        point: C,
+        point: CoordPair<&Q>,
         direction: Direction,
     ) -> Option<CoordPair<&K>>
     where
-        C: CoordRef<K>,
+        K: Borrow<Q>,
+        Q: Ord,
     {
         self.neighbours(point, direction).next_back().map(|(key, _)| key)
     }
@@ -122,7 +126,7 @@ where
         old.x
     }
 
-    pub fn create(&mut self, point: CoordPair<K>, value: V) -> Result<(), &V>
+    pub fn create(&mut self, point: CoordPair<K>, value: V) -> bool
     where
         K: Clone,
         V: Clone,
@@ -138,36 +142,38 @@ where
                     let mut inner_table = BTreeMap::new();
                     inner_table.insert(key, value);
                     table_entry.insert(inner_table);
-                    Ok(())
+                    true
                 },
 
                 btree_map::Entry::Occupied(table_entry) => {
-                    match table_entry.get_mut().entry(key) {
+                    match table_entry.into_mut().entry(key) {
                         btree_map::Entry::Vacant(inner_entry) => {
                             inner_entry.insert(value);
-                            Ok(())
+                            true
                         },
-                        btree_map::Entry::Occupied(inner_entry) => {
-                            Err(inner_entry.get())
-                        },
+                        btree_map::Entry::Occupied(_) => false,
                     }
                 },
             });
         result.x
     }
 
-    pub fn update<C>(&mut self, point: C, value: V) -> Result<V, V>
+    pub fn update<Q>(&mut self, point: CoordPair<&Q>, value: V) -> Result<V, V>
     where
-        C: CoordRef<K>,
+        K: Borrow<Q>,
+        Q: Ord,
         V: Clone,
     {
         let point = point.as_coord_ref();
-        let inner_tables = self
+        let inner_tables = match self
             .neighbours
             .as_mut()
             .zip_with(point, |table, key| table.get_mut(key))
             .transpose()
-            .ok_or(value)?;
+        {
+            Some(inner_tables) => inner_tables,
+            None => return Err(value),
+        };
 
         let values = CoordPair { x: value.clone(), y: value };
         let old = (!point).zip(values).zip_with(
@@ -180,9 +186,10 @@ where
         old.x
     }
 
-    pub fn remove<C>(&mut self, point: C) -> Option<V>
+    pub fn remove<Q>(&mut self, point: CoordPair<&Q>) -> Option<V>
     where
-        C: CoordRef<K>,
+        K: Borrow<Q>,
+        Q: Ord,
     {
         let table_pairs = point.as_coord_ref().zip(!point.as_coord_ref());
         let removed = self.neighbours.as_mut().zip_with(
@@ -323,11 +330,15 @@ impl<'map, K, V> NeighboursInner<'map, K, V>
 where
     K: Ord,
 {
-    fn new<'param>(
+    fn new<'param, Q>(
         map: &'map Map<K, V>,
-        point: CoordPair<&'param K>,
+        point: CoordPair<&'param Q>,
         direction: Direction,
-    ) -> Option<Self> {
+    ) -> Option<Self>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
         match direction {
             Direction::Up => {
                 let (key, table) = map.neighbours.x.get_key_value(point.x)?;
@@ -336,20 +347,20 @@ where
             },
 
             Direction::Down => {
-                let (key, table) = map.neighbours.x.get_key_value(point.x)?;
+                let (key, table) = map.neighbours.x.get_key_value(&point.x)?;
                 let range_spec = (Bound::Excluded(point.y), Bound::Unbounded);
                 let range = table.range(range_spec);
                 Some(Self { key, direction, range })
             },
 
             Direction::Left => {
-                let (key, table) = map.neighbours.y.get_key_value(point.y)?;
+                let (key, table) = map.neighbours.y.get_key_value(&point.y)?;
                 let range = table.range(.. point.x);
                 Some(Self { key, direction, range })
             },
 
             Direction::Right => {
-                let (key, table) = map.neighbours.y.get_key_value(point.y)?;
+                let (key, table) = map.neighbours.y.get_key_value(&point.y)?;
                 let range_spec = (Bound::Excluded(point.x), Bound::Unbounded);
                 let range = table.range(range_spec);
                 Some(Self { key, direction, range })

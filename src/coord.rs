@@ -33,6 +33,7 @@ use num::{
     },
 };
 use std::{
+    borrow::{Borrow, BorrowMut},
     cmp::Ordering,
     error::Error,
     fmt,
@@ -147,6 +148,20 @@ impl<T> CoordPair<T> {
         F: FnMut(T, U) -> B,
     {
         CoordPair { x: zipper(self.x, other.x), y: zipper(self.y, other.y) }
+    }
+
+    pub fn borrow<K>(&self) -> CoordPair<&K>
+    where
+        T: Borrow<K>,
+    {
+        self.as_ref().map(Borrow::borrow)
+    }
+
+    pub fn borrow_mut<K>(&mut self) -> CoordPair<&mut K>
+    where
+        T: BorrowMut<K>,
+    {
+        self.as_mut().map(BorrowMut::borrow_mut)
     }
 }
 
