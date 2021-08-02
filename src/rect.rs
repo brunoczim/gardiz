@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 
-use crate::{axis::Axis, coord::CoordPair};
+use crate::{axis::Axis, coord::Vec2};
 use num::traits::{
     CheckedAdd,
     CheckedSub,
@@ -16,12 +16,12 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Rect<T, S = T> {
-    pub start: CoordPair<T>,
-    pub size: CoordPair<S>,
+    pub start: Vec2<T>,
+    pub size: Vec2<S>,
 }
 
 impl<T, S> Rect<T, S> {
-    pub fn from_range<U>(start: CoordPair<T>, end: CoordPair<U>) -> Self
+    pub fn from_range<U>(start: Vec2<T>, end: Vec2<U>) -> Self
     where
         T: Clone,
         U: Sub<T, Output = S>,
@@ -32,10 +32,7 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
-    pub fn try_from_range(
-        start: CoordPair<T>,
-        end: CoordPair<T>,
-    ) -> Option<Self>
+    pub fn try_from_range(start: Vec2<T>, end: Vec2<T>) -> Option<Self>
     where
         T: Clone + CheckedSub,
     {
@@ -45,34 +42,31 @@ impl<T> Rect<T> {
 }
 
 impl<T, S> Rect<T, S> {
-    pub fn from_range_incl<Z>(start: CoordPair<T>, end: CoordPair<T>) -> Self
+    pub fn from_range_incl<Z>(start: Vec2<T>, end: Vec2<T>) -> Self
     where
         T: Sub<Output = Z> + Clone + Ord,
         Z: One + Add<Output = S>,
         S: Zero,
     {
         let size = if end < start {
-            CoordPair::<S>::zero()
+            Vec2::<S>::zero()
         } else {
-            end - start.clone() + CoordPair::<Z>::one()
+            end - start.clone() + Vec2::<Z>::one()
         };
         Self { start, size }
     }
 }
 
 impl<T> Rect<T> {
-    pub fn try_from_range_incl(
-        start: CoordPair<T>,
-        end: CoordPair<T>,
-    ) -> Option<Self>
+    pub fn try_from_range_incl(start: Vec2<T>, end: Vec2<T>) -> Option<Self>
     where
         T: CheckedAdd + CheckedSub + One + Zero + Ord + Clone,
     {
         let size = if end < start {
-            CoordPair::<T>::zero()
+            Vec2::<T>::zero()
         } else {
             let diff = end.checked_sub(&start.clone())?;
-            diff.checked_add(&CoordPair::<T>::one())?
+            diff.checked_add(&Vec2::<T>::one())?
         };
         Some(Self { start, size })
     }
@@ -86,7 +80,7 @@ impl<T, S> Rect<T, S> {
         self.size.x.is_zero() || self.size.y.is_zero()
     }
 
-    pub fn end(self) -> CoordPair<T::Output>
+    pub fn end(self) -> Vec2<T::Output>
     where
         T: Add<S>,
     {
@@ -95,21 +89,21 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
-    pub fn wrapping_end(&self) -> CoordPair<T>
+    pub fn wrapping_end(&self) -> Vec2<T>
     where
         T: WrappingAdd,
     {
         self.start.wrapping_add(&self.size)
     }
 
-    pub fn saturating_end(&self) -> CoordPair<T>
+    pub fn saturating_end(&self) -> Vec2<T>
     where
         T: SaturatingAdd,
     {
         self.start.saturating_add(&self.size)
     }
 
-    pub fn checked_end(&self) -> Option<CoordPair<T>>
+    pub fn checked_end(&self) -> Option<Vec2<T>>
     where
         T: CheckedAdd,
     {
@@ -118,61 +112,61 @@ impl<T> Rect<T> {
 }
 
 impl<T, S> Rect<T, S> {
-    pub fn end_ref<'this, U>(&'this self) -> CoordPair<U>
+    pub fn end_ref<'this, U>(&'this self) -> Vec2<U>
     where
         &'this T: Add<&'this S, Output = U>,
     {
         &self.start + &self.size
     }
 
-    pub fn end_inclusive<U, V>(self) -> CoordPair<V>
+    pub fn end_inclusive<U, V>(self) -> Vec2<V>
     where
         S: Sub<Output = U> + One + Zero,
         T: Add<U, Output = V> + Sub<Output = V> + One,
     {
         if self.is_empty() {
-            self.start - CoordPair::<T>::one()
+            self.start - Vec2::<T>::one()
         } else {
-            self.start + (self.size - CoordPair::<S>::one())
+            self.start + (self.size - Vec2::<S>::one())
         }
     }
 }
 
 impl<T> Rect<T> {
-    pub fn wrapping_end_incl(&self) -> CoordPair<T>
+    pub fn wrapping_end_incl(&self) -> Vec2<T>
     where
         T: WrappingAdd + WrappingSub + One,
     {
-        self.start.wrapping_add(&self.size).wrapping_sub(&CoordPair::<T>::one())
+        self.start.wrapping_add(&self.size).wrapping_sub(&Vec2::<T>::one())
     }
 
-    pub fn saturating_end_incl(&self) -> CoordPair<T>
+    pub fn saturating_end_incl(&self) -> Vec2<T>
     where
         T: SaturatingAdd + SaturatingSub + One + Zero,
     {
         if self.is_empty() {
-            self.start.saturating_sub(&CoordPair::<T>::one())
+            self.start.saturating_sub(&Vec2::<T>::one())
         } else {
-            let last_index = self.size.saturating_sub(&CoordPair::<T>::one());
+            let last_index = self.size.saturating_sub(&Vec2::<T>::one());
             self.start.saturating_add(&last_index)
         }
     }
 
-    pub fn checked_end_incl(&self) -> Option<CoordPair<T>>
+    pub fn checked_end_incl(&self) -> Option<Vec2<T>>
     where
         T: CheckedAdd + CheckedSub + One + Zero,
     {
         if self.is_empty() {
-            self.start.checked_sub(&CoordPair::<T>::one())
+            self.start.checked_sub(&Vec2::<T>::one())
         } else {
-            let last_index = self.size.checked_sub(&CoordPair::<T>::one())?;
+            let last_index = self.size.checked_sub(&Vec2::<T>::one())?;
             self.start.checked_add(&&last_index)
         }
     }
 }
 
 impl<T, S> Rect<T, S> {
-    pub fn end_incl_ref<'this, U, V>(&'this self) -> CoordPair<V>
+    pub fn end_incl_ref<'this, U, V>(&'this self) -> Vec2<V>
     where
         &'this S: Sub<S, Output = U>,
         S: One + Zero,
@@ -180,13 +174,13 @@ impl<T, S> Rect<T, S> {
         T: One,
     {
         if self.size.is_zero() {
-            &self.start - CoordPair::<T>::one()
+            &self.start - Vec2::<T>::one()
         } else {
-            &self.start + (&self.size - CoordPair::<S>::one())
+            &self.start + (&self.size - Vec2::<S>::one())
         }
     }
 
-    pub fn end_non_empty<U, V>(self) -> Option<CoordPair<V>>
+    pub fn end_non_empty<U, V>(self) -> Option<Vec2<V>>
     where
         S: Sub<Output = U> + One + Zero,
         T: Add<U, Output = V> + Sub<Output = V> + One,
@@ -194,11 +188,11 @@ impl<T, S> Rect<T, S> {
         if self.is_empty() {
             None
         } else {
-            Some(self.start + (self.size - CoordPair::<S>::one()))
+            Some(self.start + (self.size - Vec2::<S>::one()))
         }
     }
 
-    pub fn end_non_empty_ref<'this, U, V>(&'this self) -> Option<CoordPair<V>>
+    pub fn end_non_empty_ref<'this, U, V>(&'this self) -> Option<Vec2<V>>
     where
         &'this S: Sub<S, Output = U>,
         S: One + Zero,
@@ -208,11 +202,11 @@ impl<T, S> Rect<T, S> {
         if self.size.is_zero() {
             None
         } else {
-            Some(&self.start + (&self.size - CoordPair::<S>::one()))
+            Some(&self.start + (&self.size - Vec2::<S>::one()))
         }
     }
 
-    pub fn has_point<'this, U>(&'this self, point: CoordPair<T>) -> bool
+    pub fn has_point<'this, U>(&'this self, point: Vec2<T>) -> bool
     where
         &'this S: Sub<S, Output = U>,
         S: One + Zero,
@@ -394,7 +388,7 @@ impl<T> Iterator for RectColumns<T>
 where
     T: One + AddAssign + Ord + Clone,
 {
-    type Item = CoordPair<T>;
+    type Item = Vec2<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let inner = self.inner.as_mut()?;
@@ -440,10 +434,10 @@ where
 
 #[derive(Debug)]
 struct RectColumnsInner<T> {
-    start: CoordPair<T>,
-    end: CoordPair<T>,
-    front: CoordPair<T>,
-    back: CoordPair<T>,
+    start: Vec2<T>,
+    end: Vec2<T>,
+    front: Vec2<T>,
+    back: Vec2<T>,
 }
 
 impl<T> RectColumnsInner<T>
@@ -464,7 +458,7 @@ impl<T> Iterator for RectRows<T>
 where
     T: One + AddAssign + Ord + Clone,
 {
-    type Item = CoordPair<T>;
+    type Item = Vec2<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let inner = self.inner.as_mut()?;
@@ -510,10 +504,10 @@ where
 
 #[derive(Debug)]
 struct RectRowsInner<T> {
-    start: CoordPair<T>,
-    end: CoordPair<T>,
-    front: CoordPair<T>,
-    back: CoordPair<T>,
+    start: Vec2<T>,
+    end: Vec2<T>,
+    front: Vec2<T>,
+    back: Vec2<T>,
 }
 
 impl<T> RectRowsInner<T>
@@ -534,7 +528,7 @@ impl<T> Iterator for RectBorders<T>
 where
     T: AddAssign + One + Ord + Clone,
 {
-    type Item = CoordPair<T>;
+    type Item = Vec2<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let inner = self.inner.as_mut()?;
@@ -577,10 +571,10 @@ where
 
 #[derive(Debug)]
 struct RectBordersInner<T> {
-    start: CoordPair<T>,
-    end: CoordPair<T>,
+    start: Vec2<T>,
+    end: Vec2<T>,
     fixed_axis: Axis,
-    curr: CoordPair<T>,
+    curr: Vec2<T>,
 }
 
 impl<T> RectBordersInner<T>

@@ -56,12 +56,12 @@ use std::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
-pub struct CoordPair<T> {
+pub struct Vec2<T> {
     pub y: T,
     pub x: T,
 }
 
-impl<T> Index<Axis> for CoordPair<T> {
+impl<T> Index<Axis> for Vec2<T> {
     type Output = T;
 
     fn index(&self, axis: Axis) -> &Self::Output {
@@ -72,7 +72,7 @@ impl<T> Index<Axis> for CoordPair<T> {
     }
 }
 
-impl<T> IndexMut<Axis> for CoordPair<T> {
+impl<T> IndexMut<Axis> for Vec2<T> {
     fn index_mut(&mut self, axis: Axis) -> &mut Self::Output {
         match axis {
             Axis::Y => &mut self.y,
@@ -81,15 +81,15 @@ impl<T> IndexMut<Axis> for CoordPair<T> {
     }
 }
 
-impl<T> Not for CoordPair<T> {
-    type Output = CoordPair<T>;
+impl<T> Not for Vec2<T> {
+    type Output = Vec2<T>;
 
     fn not(self) -> Self::Output {
         Self { x: self.y, y: self.x }
     }
 }
 
-impl<T> CoordPair<T> {
+impl<T> Vec2<T> {
     pub fn from_axes<F>(mut mapper: F) -> Self
     where
         F: FnMut(Axis) -> T,
@@ -97,26 +97,26 @@ impl<T> CoordPair<T> {
         Self { y: mapper(Axis::Y), x: mapper(Axis::X) }
     }
 
-    pub fn as_ref(&self) -> CoordPair<&T> {
-        CoordPair { x: &self.x, y: &self.y }
+    pub fn as_ref(&self) -> Vec2<&T> {
+        Vec2 { x: &self.x, y: &self.y }
     }
 
-    pub fn as_mut(&mut self) -> CoordPair<&mut T> {
-        CoordPair { x: &mut self.x, y: &mut self.y }
+    pub fn as_mut(&mut self) -> Vec2<&mut T> {
+        Vec2 { x: &mut self.x, y: &mut self.y }
     }
 
-    pub fn map_with_axes<F, U>(self, mut mapper: F) -> CoordPair<U>
+    pub fn map_with_axes<F, U>(self, mut mapper: F) -> Vec2<U>
     where
         F: FnMut(Axis, T) -> U,
     {
-        CoordPair { y: mapper(Axis::Y, self.y), x: mapper(Axis::X, self.x) }
+        Vec2 { y: mapper(Axis::Y, self.y), x: mapper(Axis::X, self.x) }
     }
 
-    pub fn map<F, U>(self, mut mapper: F) -> CoordPair<U>
+    pub fn map<F, U>(self, mut mapper: F) -> Vec2<U>
     where
         F: FnMut(T) -> U,
     {
-        CoordPair { y: mapper(self.y), x: mapper(self.x) }
+        Vec2 { y: mapper(self.y), x: mapper(self.x) }
     }
 
     pub fn fold<F, U>(self, init: U, mut folder: F) -> U
@@ -135,54 +135,66 @@ impl<T> CoordPair<T> {
         folder(acc, self.x)
     }
 
-    pub fn zip<U>(self, other: CoordPair<U>) -> CoordPair<(T, U)> {
+    pub fn zip<U>(self, other: Vec2<U>) -> Vec2<(T, U)> {
         self.zip_with(other, |this, other| (this, other))
     }
 
-    pub fn zip_with<F, U, B>(
-        self,
-        other: CoordPair<U>,
-        mut zipper: F,
-    ) -> CoordPair<B>
+    pub fn zip_with<F, U, B>(self, other: Vec2<U>, mut zipper: F) -> Vec2<B>
     where
         F: FnMut(T, U) -> B,
     {
-        CoordPair { x: zipper(self.x, other.x), y: zipper(self.y, other.y) }
+        Vec2 { x: zipper(self.x, other.x), y: zipper(self.y, other.y) }
     }
 
-    pub fn borrow<K>(&self) -> CoordPair<&K>
+    pub fn borrow<K>(&self) -> Vec2<&K>
     where
         T: Borrow<K>,
     {
-        self.as_ref().map(Borrow::borrow)
+        self.as_ref().into_borrow()
     }
 
-    pub fn borrow_mut<K>(&mut self) -> CoordPair<&mut K>
+    pub fn borrow_mut<K>(&mut self) -> Vec2<&mut K>
     where
         T: BorrowMut<K>,
     {
-        self.as_mut().map(BorrowMut::borrow_mut)
+        self.as_mut().into_borrow_mut()
     }
 }
 
-impl<'elems, T> CoordPair<&'elems T> {
-    pub fn cloned(self) -> CoordPair<T>
+impl<'elems, T> Vec2<&'elems T> {
+    pub fn cloned(self) -> Vec2<T>
     where
         T: Clone,
     {
         self.map(Clone::clone)
     }
 
-    pub fn copied(self) -> CoordPair<T>
+    pub fn copied(self) -> Vec2<T>
     where
         T: Copy,
     {
         self.map(|&elem| elem)
     }
+
+    pub fn into_borrow<K>(self) -> Vec2<&'elems K>
+    where
+        T: Borrow<K>,
+    {
+        self.map(Borrow::borrow)
+    }
 }
 
-impl<T> CoordPair<T> {
-    pub fn dot<U, A>(self, other: CoordPair<U>) -> A::Output
+impl<'elems, T> Vec2<&'elems mut T> {
+    pub fn into_borrow_mut<K>(self) -> Vec2<&'elems mut K>
+    where
+        T: BorrowMut<K>,
+    {
+        self.map(BorrowMut::borrow_mut)
+    }
+}
+
+impl<T> Vec2<T> {
+    pub fn dot<U, A>(self, other: Vec2<U>) -> A::Output
     where
         T: Mul<U, Output = A>,
         A: Add,
@@ -193,7 +205,7 @@ impl<T> CoordPair<T> {
 
     pub fn dot_ref<'this, 'other, U, A>(
         &'this self,
-        other: &'other CoordPair<U>,
+        other: &'other Vec2<U>,
     ) -> A::Output
     where
         &'this T: Mul<&'other U, Output = A>,
@@ -390,16 +402,16 @@ impl<T> CoordPair<T> {
             .as_ref()
             .zip_with(other.as_ref(), |this, other| this.cmp(&other));
         match cmping {
-            CoordPair { x: Ordering::Equal, y: Ordering::Greater } => {
+            Vec2 { x: Ordering::Equal, y: Ordering::Greater } => {
                 Some(Direction::Up)
             },
-            CoordPair { x: Ordering::Equal, y: Ordering::Less } => {
+            Vec2 { x: Ordering::Equal, y: Ordering::Less } => {
                 Some(Direction::Down)
             },
-            CoordPair { x: Ordering::Greater, y: Ordering::Equal } => {
+            Vec2 { x: Ordering::Greater, y: Ordering::Equal } => {
                 Some(Direction::Left)
             },
-            CoordPair { x: Ordering::Less, y: Ordering::Equal } => {
+            Vec2 { x: Ordering::Less, y: Ordering::Equal } => {
                 Some(Direction::Right)
             },
             _ => None,
@@ -487,33 +499,33 @@ impl<T> CoordPair<T> {
         Self { y: -T::one() - self.y, ..self }
     }
 
-    pub fn center_origin_at<U>(self, origin: &CoordPair<T>) -> CoordPair<U>
+    pub fn center_origin_at<U>(self, origin: &Vec2<T>) -> Vec2<U>
     where
-        Self: ExcessToSigned<Target = CoordPair<U>>,
+        Self: ExcessToSigned<Target = Vec2<U>>,
         U: Sub<Output = U> + Neg<Output = U> + One,
     {
         self.excess_to_signed(origin).flip_y()
     }
 
-    pub fn center_origin<U>(self) -> CoordPair<U>
+    pub fn center_origin<U>(self) -> Vec2<U>
     where
-        Self: ExcessToSigned<Target = CoordPair<U>> + HalfExcess,
+        Self: ExcessToSigned<Target = Vec2<U>> + HalfExcess,
         U: Sub<Output = U> + Neg<Output = U> + One,
     {
         self.half_exc_to_signed().flip_y()
     }
 }
 
-impl<T> CoordPair<Option<T>> {
-    pub fn transpose(self) -> Option<CoordPair<T>> {
+impl<T> Vec2<Option<T>> {
+    pub fn transpose(self) -> Option<Vec2<T>> {
         match (self.y, self.x) {
-            (Some(y), Some(x)) => Some(CoordPair { y, x }),
+            (Some(y), Some(x)) => Some(Vec2 { y, x }),
             _ => None,
         }
     }
 }
 
-impl<T> Zero for CoordPair<T>
+impl<T> Zero for Vec2<T>
 where
     T: Zero,
 {
@@ -532,7 +544,7 @@ where
     }
 }
 
-impl<T> One for CoordPair<T>
+impl<T> One for Vec2<T>
 where
     T: One,
 {
@@ -549,47 +561,46 @@ where
 
 macro_rules! elemwise_binop {
     ($trait:ident, $method:ident) => {
-        impl<T, U> $trait<CoordPair<U>> for CoordPair<T>
+        impl<T, U> $trait<Vec2<U>> for Vec2<T>
         where
             T: $trait<U>,
         {
-            type Output = CoordPair<T::Output>;
+            type Output = Vec2<T::Output>;
 
-            fn $method(self, other: CoordPair<U>) -> Self::Output {
+            fn $method(self, other: Vec2<U>) -> Self::Output {
                 self.zip_with(other, |this, other| this.$method(other))
             }
         }
 
-        impl<'other, T, U> $trait<&'other CoordPair<U>> for CoordPair<T>
+        impl<'other, T, U> $trait<&'other Vec2<U>> for Vec2<T>
         where
             T: $trait<&'other U>,
         {
-            type Output = CoordPair<T::Output>;
+            type Output = Vec2<T::Output>;
 
-            fn $method(self, other: &'other CoordPair<U>) -> Self::Output {
+            fn $method(self, other: &'other Vec2<U>) -> Self::Output {
                 self.zip_with(other.as_ref(), |this, other| this.$method(other))
             }
         }
 
-        impl<'this, T, U> $trait<CoordPair<U>> for &'this CoordPair<T>
+        impl<'this, T, U> $trait<Vec2<U>> for &'this Vec2<T>
         where
             &'this T: $trait<U>,
         {
-            type Output = CoordPair<<&'this T as $trait<U>>::Output>;
+            type Output = Vec2<<&'this T as $trait<U>>::Output>;
 
-            fn $method(self, other: CoordPair<U>) -> Self::Output {
+            fn $method(self, other: Vec2<U>) -> Self::Output {
                 self.as_ref().zip_with(other, |this, other| this.$method(other))
             }
         }
 
-        impl<'this, 'other, T, U> $trait<&'other CoordPair<U>>
-            for &'this CoordPair<T>
+        impl<'this, 'other, T, U> $trait<&'other Vec2<U>> for &'this Vec2<T>
         where
             &'this T: $trait<&'other U>,
         {
-            type Output = CoordPair<<&'this T as $trait<&'other U>>::Output>;
+            type Output = Vec2<<&'this T as $trait<&'other U>>::Output>;
 
-            fn $method(self, other: &'other CoordPair<U>) -> Self::Output {
+            fn $method(self, other: &'other Vec2<U>) -> Self::Output {
                 self.as_ref().$method(other.as_ref())
             }
         }
@@ -598,21 +609,21 @@ macro_rules! elemwise_binop {
 
 macro_rules! elemwise_assign {
     ($trait:ident, $method:ident) => {
-        impl<T, U> $trait<CoordPair<U>> for CoordPair<T>
+        impl<T, U> $trait<Vec2<U>> for Vec2<T>
         where
             T: $trait<U>,
         {
-            fn $method(&mut self, other: CoordPair<U>) {
+            fn $method(&mut self, other: Vec2<U>) {
                 self.y.$method(other.y);
                 self.x.$method(other.x);
             }
         }
 
-        impl<'param, T, U> $trait<&'param CoordPair<U>> for CoordPair<T>
+        impl<'param, T, U> $trait<&'param Vec2<U>> for Vec2<T>
         where
             T: $trait<&'param U>,
         {
-            fn $method(&mut self, other: &'param CoordPair<U>) {
+            fn $method(&mut self, other: &'param Vec2<U>) {
                 for axis in Axis::iter() {
                     self[axis].$method(&other[axis]);
                 }
@@ -633,22 +644,22 @@ elemwise_binop! { Rem, rem }
 elemwise_assign! { RemAssign, rem_assign }
 elemwise_binop! { Pow, pow }
 
-impl<T> Neg for CoordPair<T>
+impl<T> Neg for Vec2<T>
 where
     T: Neg,
 {
-    type Output = CoordPair<T::Output>;
+    type Output = Vec2<T::Output>;
 
     fn neg(self) -> Self::Output {
         self.map(|elem| -elem)
     }
 }
 
-impl<'this, T> Neg for &'this CoordPair<T>
+impl<'this, T> Neg for &'this Vec2<T>
 where
     &'this T: Neg,
 {
-    type Output = CoordPair<<&'this T as Neg>::Output>;
+    type Output = Vec2<<&'this T as Neg>::Output>;
 
     fn neg(self) -> Self::Output {
         self.as_ref().map(|elem| -elem)
@@ -657,7 +668,7 @@ where
 
 macro_rules! elemwise_overflow {
     ($trait:ident, $method:ident) => {
-        impl<T> $trait for CoordPair<T>
+        impl<T> $trait for Vec2<T>
         where
             T: $trait,
         {
@@ -676,7 +687,7 @@ elemwise_overflow! { SaturatingAdd, saturating_add}
 elemwise_overflow! { SaturatingSub, saturating_sub}
 elemwise_overflow! { SaturatingMul, saturating_mul}
 
-impl<T> WrappingNeg for CoordPair<T>
+impl<T> WrappingNeg for Vec2<T>
 where
     T: WrappingNeg,
 {
@@ -687,7 +698,7 @@ where
 
 macro_rules! elemwise_checked {
     ($trait:ident, $method:ident) => {
-        impl<T> $trait for CoordPair<T>
+        impl<T> $trait for Vec2<T>
         where
             T: $trait,
         {
@@ -706,7 +717,7 @@ elemwise_checked! { CheckedMul, checked_mul }
 elemwise_checked! { CheckedDiv, checked_div }
 elemwise_checked! { CheckedRem, checked_rem }
 
-impl<T> CheckedNeg for CoordPair<T>
+impl<T> CheckedNeg for Vec2<T>
 where
     T: CheckedNeg,
 {
@@ -739,7 +750,7 @@ where
 
 impl<E> Error for FromStrRadixErr<E> where E: Error {}
 
-impl<T> Num for CoordPair<T>
+impl<T> Num for Vec2<T>
 where
     T: Num,
 {
@@ -762,9 +773,9 @@ where
     }
 }
 
-impl<T> Unsigned for CoordPair<T> where T: Unsigned {}
+impl<T> Unsigned for Vec2<T> where T: Unsigned {}
 
-impl<T> Signed for CoordPair<T>
+impl<T> Signed for Vec2<T>
 where
     T: Signed,
 {
@@ -790,29 +801,29 @@ where
     }
 }
 
-impl<T> CastSigned for CoordPair<T>
+impl<T> CastSigned for Vec2<T>
 where
     T: CastSigned,
 {
-    type Target = CoordPair<T::Target>;
+    type Target = Vec2<T::Target>;
 
     fn cast_signed(&self) -> Self::Target {
         self.as_ref().map(|elem| elem.cast_signed())
     }
 }
 
-impl<T> CastUnsigned for CoordPair<T>
+impl<T> CastUnsigned for Vec2<T>
 where
     T: CastUnsigned,
 {
-    type Target = CoordPair<T::Target>;
+    type Target = Vec2<T::Target>;
 
     fn cast_unsigned(&self) -> Self::Target {
         self.as_ref().map(|elem| elem.cast_unsigned())
     }
 }
 
-impl<T> Bounded for CoordPair<T>
+impl<T> Bounded for Vec2<T>
 where
     T: Bounded,
 {
@@ -825,79 +836,14 @@ where
     }
 }
 
-impl<'this, T> From<&'this CoordPair<T>> for CoordPair<&'this T> {
-    fn from(input: &'this CoordPair<T>) -> Self {
+impl<'this, T> From<&'this Vec2<T>> for Vec2<&'this T> {
+    fn from(input: &'this Vec2<T>) -> Self {
         input.as_ref()
     }
 }
 
-impl<'this, T> From<&'this mut CoordPair<T>> for CoordPair<&'this mut T> {
-    fn from(input: &'this mut CoordPair<T>) -> Self {
+impl<'this, T> From<&'this mut Vec2<T>> for Vec2<&'this mut T> {
+    fn from(input: &'this mut Vec2<T>) -> Self {
         input.as_mut()
-    }
-}
-
-pub trait CoordRef<T> {
-    fn as_coord_ref(&self) -> CoordPair<&T>;
-}
-
-impl<T> CoordRef<T> for CoordPair<T> {
-    fn as_coord_ref(&self) -> CoordPair<&T> {
-        self.as_ref()
-    }
-}
-
-impl<'this, T> CoordRef<T> for CoordPair<&'this T> {
-    fn as_coord_ref(&self) -> CoordPair<&T> {
-        *self
-    }
-}
-
-impl<'this, T> CoordRef<T> for CoordPair<&'this mut T> {
-    fn as_coord_ref(&self) -> CoordPair<&T> {
-        self.as_ref().map(|coord| &**coord)
-    }
-}
-
-impl<'this, T, C> CoordRef<T> for &'this C
-where
-    C: CoordRef<T>,
-{
-    fn as_coord_ref(&self) -> CoordPair<&T> {
-        (**self).as_coord_ref()
-    }
-}
-
-impl<'this, T, C> CoordRef<T> for &'this mut C
-where
-    C: CoordRef<T>,
-{
-    fn as_coord_ref(&self) -> CoordPair<&T> {
-        (**self).as_coord_ref()
-    }
-}
-
-pub trait CoordMut<T>: CoordRef<T> {
-    fn as_coord_mut(&mut self) -> CoordPair<&mut T>;
-}
-
-impl<T> CoordMut<T> for CoordPair<T> {
-    fn as_coord_mut(&mut self) -> CoordPair<&mut T> {
-        self.as_mut()
-    }
-}
-
-impl<'this, T> CoordMut<T> for CoordPair<&'this mut T> {
-    fn as_coord_mut(&mut self) -> CoordPair<&mut T> {
-        self.as_mut().map(|elem| &mut **elem)
-    }
-}
-
-impl<'this, T, C> CoordMut<T> for &'this mut C
-where
-    C: CoordMut<T>,
-{
-    fn as_coord_mut(&mut self) -> CoordPair<&mut T> {
-        (**self).as_coord_mut()
     }
 }

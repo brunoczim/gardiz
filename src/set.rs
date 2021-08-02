@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 
-use crate::{coord::CoordPair, direc::Direction, map, map::Map};
+use crate::{coord::Vec2, direc::Direction, map, map::Map};
 use std::{borrow::Borrow, iter::FromIterator};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,7 +33,7 @@ where
         self.inner.is_empty()
     }
 
-    pub fn contains<U>(&self, point: CoordPair<&U>) -> bool
+    pub fn contains<U>(&self, point: Vec2<&U>) -> bool
     where
         T: Borrow<U>,
         U: Ord,
@@ -43,7 +43,7 @@ where
 
     pub fn neighbours<U>(
         &self,
-        point: CoordPair<&U>,
+        point: Vec2<&U>,
         direction: Direction,
     ) -> Neighbours<T>
     where
@@ -53,11 +53,23 @@ where
         Neighbours { inner: self.inner.neighbours(point, direction) }
     }
 
+    pub fn neighbours_incl<U>(
+        &self,
+        point: Vec2<&U>,
+        direction: Direction,
+    ) -> Neighbours<T>
+    where
+        T: Borrow<U>,
+        U: Ord,
+    {
+        Neighbours { inner: self.inner.neighbours_incl(point, direction) }
+    }
+
     pub fn first_neighbour<U>(
         &self,
-        point: CoordPair<&U>,
+        point: Vec2<&U>,
         direction: Direction,
-    ) -> Option<CoordPair<&T>>
+    ) -> Option<Vec2<&T>>
     where
         U: Ord,
         T: Borrow<U>,
@@ -67,9 +79,9 @@ where
 
     pub fn last_neighbour<U>(
         &self,
-        point: CoordPair<&U>,
+        point: Vec2<&U>,
         direction: Direction,
-    ) -> Option<CoordPair<&T>>
+    ) -> Option<Vec2<&T>>
     where
         U: Ord,
         T: Borrow<U>,
@@ -77,14 +89,14 @@ where
         self.inner.last_neighbour(point, direction)
     }
 
-    pub fn insert(&mut self, point: CoordPair<T>) -> bool
+    pub fn insert(&mut self, point: Vec2<T>) -> bool
     where
         T: Clone,
     {
         self.inner.insert(point, ()).is_none()
     }
 
-    pub fn remove<U>(&mut self, point: CoordPair<&U>) -> bool
+    pub fn remove<U>(&mut self, point: Vec2<&U>) -> bool
     where
         U: Ord,
         T: Borrow<U>,
@@ -101,25 +113,25 @@ where
     }
 }
 
-impl<T> Extend<CoordPair<T>> for Set<T>
+impl<T> Extend<Vec2<T>> for Set<T>
 where
     T: Ord + Clone,
 {
     fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = CoordPair<T>>,
+        I: IntoIterator<Item = Vec2<T>>,
     {
         self.inner.extend(iter.into_iter().map(|key| (key, ())));
     }
 }
 
-impl<T> FromIterator<CoordPair<T>> for Set<T>
+impl<T> FromIterator<Vec2<T>> for Set<T>
 where
     T: Ord + Clone,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = CoordPair<T>>,
+        I: IntoIterator<Item = Vec2<T>>,
     {
         Self { inner: iter.into_iter().map(|key| (key, ())).collect() }
     }
@@ -137,7 +149,7 @@ impl<'set, T> Iterator for Neighbours<'set, T>
 where
     T: Ord,
 {
-    type Item = CoordPair<&'set T>;
+    type Item = Vec2<&'set T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|(key, _)| key)
@@ -165,7 +177,7 @@ impl<'set, T> Iterator for Rows<'set, T>
 where
     T: Ord,
 {
-    type Item = CoordPair<&'set T>;
+    type Item = Vec2<&'set T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|(key, _)| key)
@@ -193,7 +205,7 @@ impl<'set, T> Iterator for Columns<'set, T>
 where
     T: Ord,
 {
-    type Item = CoordPair<&'set T>;
+    type Item = Vec2<&'set T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next().map(|(key, _)| key)

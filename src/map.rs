@@ -1,16 +1,12 @@
 #[cfg(test)]
 mod test;
 
-use crate::{
-    coord::{CoordPair, CoordRef},
-    direc::Direction,
-};
+use crate::{coord::Vec2, direc::Direction};
 use std::{
     borrow::Borrow,
     collections::{btree_map, BTreeMap},
     iter::FromIterator,
     mem,
-    ops::Bound,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,7 +14,7 @@ pub struct Map<K, V>
 where
     K: Ord,
 {
-    neighbours: CoordPair<BTreeMap<K, BTreeMap<K, V>>>,
+    neighbours: Vec2<BTreeMap<K, BTreeMap<K, V>>>,
 }
 
 impl<K, V> Default for Map<K, V>
@@ -35,14 +31,14 @@ where
     K: Ord,
 {
     pub fn new() -> Self {
-        Map { neighbours: CoordPair::from_axes(|_| BTreeMap::new()) }
+        Map { neighbours: Vec2::from_axes(|_| BTreeMap::new()) }
     }
 
     pub fn is_empty(&self) -> bool {
         self.neighbours.x.is_empty()
     }
 
-    pub fn get<Q>(&self, point: CoordPair<&Q>) -> Option<&V>
+    pub fn get<Q>(&self, point: Vec2<&Q>) -> Option<&V>
     where
         K: Borrow<Q>,
         Q: Ord,
@@ -50,7 +46,7 @@ where
         self.neighbours.x.get(point.x).and_then(|ys| ys.get(&point.y))
     }
 
-    pub fn contains<Q>(&self, point: CoordPair<&Q>) -> bool
+    pub fn contains<Q>(&self, point: Vec2<&Q>) -> bool
     where
         K: Borrow<Q>,
         Q: Ord,
@@ -63,7 +59,21 @@ where
 
     pub fn neighbours<Q>(
         &self,
-        point: CoordPair<&Q>,
+        point: Vec2<&Q>,
+        direction: Direction,
+    ) -> Neighbours<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        let mut iterator = self.neighbours_incl(point, direction);
+        iterator.next();
+        iterator
+    }
+
+    pub fn neighbours_incl<Q>(
+        &self,
+        point: Vec2<&Q>,
         direction: Direction,
     ) -> Neighbours<K, V>
     where
@@ -75,29 +85,53 @@ where
 
     pub fn first_neighbour<Q>(
         &self,
-        point: CoordPair<&Q>,
+        point: Vec2<&Q>,
         direction: Direction,
-    ) -> Option<CoordPair<&K>>
+    ) -> Option<Vec2<&K>>
     where
         K: Borrow<Q>,
         Q: Ord,
     {
-        self.neighbours(point, direction).next().map(|(key, _)| key)
+        self.first_neighbour_data(point, direction).map(|(key, _)| key)
+    }
+
+    pub fn first_neighbour_data<Q>(
+        &self,
+        point: Vec2<&Q>,
+        direction: Direction,
+    ) -> Option<(Vec2<&K>, &V)>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        self.neighbours(point, direction).next()
     }
 
     pub fn last_neighbour<Q>(
         &self,
-        point: CoordPair<&Q>,
+        point: Vec2<&Q>,
         direction: Direction,
-    ) -> Option<CoordPair<&K>>
+    ) -> Option<Vec2<&K>>
     where
         K: Borrow<Q>,
         Q: Ord,
     {
-        self.neighbours(point, direction).next_back().map(|(key, _)| key)
+        self.last_neighbour_data(point, direction).map(|(key, _)| key)
     }
 
-    pub fn insert(&mut self, point: CoordPair<K>, value: V) -> Option<V>
+    pub fn last_neighbour_data<Q>(
+        &self,
+        point: Vec2<&Q>,
+        direction: Direction,
+    ) -> Option<(Vec2<&K>, &V)>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        self.neighbours(point, direction).next_back()
+    }
+
+    pub fn insert(&mut self, point: Vec2<K>, value: V) -> Option<V>
     where
         K: Clone,
         V: Clone,
@@ -117,7 +151,7 @@ where
                 }),
         };
 
-        let values = CoordPair { x: value.clone(), y: value };
+        let values = Vec2 { x: value.clone(), y: value };
         let old = (!point)
             .zip(values)
             .zip_with(inner_tables, |(key, value), table| {
@@ -126,12 +160,12 @@ where
         old.x
     }
 
-    pub fn create(&mut self, point: CoordPair<K>, value: V) -> bool
+    pub fn create(&mut self, point: Vec2<K>, value: V) -> bool
     where
         K: Clone,
         V: Clone,
     {
-        let values = CoordPair { x: value.clone(), y: value };
+        let values = Vec2 { x: value.clone(), y: value };
         let entries = (!point.clone()).zip(values);
         let result = self
             .neighbours
@@ -158,13 +192,12 @@ where
         result.x
     }
 
-    pub fn update<Q>(&mut self, point: CoordPair<&Q>, value: V) -> Result<V, V>
+    pub fn update<Q>(&mut self, point: Vec2<&Q>, value: V) -> Result<V, V>
     where
         K: Borrow<Q>,
         Q: Ord,
         V: Clone,
     {
-        let point = point.as_coord_ref();
         let inner_tables = match self
             .neighbours
             .as_mut()
@@ -175,7 +208,7 @@ where
             None => return Err(value),
         };
 
-        let values = CoordPair { x: value.clone(), y: value };
+        let values = Vec2 { x: value.clone(), y: value };
         let old = (!point).zip(values).zip_with(
             inner_tables,
             |(key, value), table| match table.get_mut(key) {
@@ -186,12 +219,12 @@ where
         old.x
     }
 
-    pub fn remove<Q>(&mut self, point: CoordPair<&Q>) -> Option<V>
+    pub fn remove<Q>(&mut self, point: Vec2<&Q>) -> Option<V>
     where
         K: Borrow<Q>,
         Q: Ord,
     {
-        let table_pairs = point.as_coord_ref().zip(!point.as_coord_ref());
+        let table_pairs = point.zip(!point);
         let removed = self.neighbours.as_mut().zip_with(
             table_pairs,
             |table, (key, inner_key)| {
@@ -222,14 +255,14 @@ where
     }
 }
 
-impl<K, V> Extend<(CoordPair<K>, V)> for Map<K, V>
+impl<K, V> Extend<(Vec2<K>, V)> for Map<K, V>
 where
     K: Ord + Clone,
     V: Clone,
 {
     fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = (CoordPair<K>, V)>,
+        I: IntoIterator<Item = (Vec2<K>, V)>,
     {
         for (point, value) in iter {
             self.insert(point, value);
@@ -237,14 +270,14 @@ where
     }
 }
 
-impl<K, V> FromIterator<(CoordPair<K>, V)> for Map<K, V>
+impl<K, V> FromIterator<(Vec2<K>, V)> for Map<K, V>
 where
     K: Ord + Clone,
     V: Clone,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (CoordPair<K>, V)>,
+        I: IntoIterator<Item = (Vec2<K>, V)>,
     {
         let mut map = Map::new();
         map.extend(iter);
@@ -264,26 +297,26 @@ impl<'map, K, V> Iterator for Neighbours<'map, K, V>
 where
     K: Ord,
 {
-    type Item = (CoordPair<&'map K>, &'map V);
+    type Item = (Vec2<&'map K>, &'map V);
 
     fn next(&mut self) -> Option<Self::Item> {
         let inner = self.inner.as_mut()?;
         match inner.direction {
             Direction::Up => {
                 let (inner_key, value) = inner.range.next_back()?;
-                Some((CoordPair { x: inner.key, y: inner_key }, value))
+                Some((Vec2 { x: inner.key, y: inner_key }, value))
             },
             Direction::Down => {
                 let (inner_key, value) = inner.range.next()?;
-                Some((CoordPair { x: inner.key, y: inner_key }, value))
+                Some((Vec2 { x: inner.key, y: inner_key }, value))
             },
             Direction::Left => {
                 let (inner_key, value) = inner.range.next_back()?;
-                Some((CoordPair { y: inner.key, x: inner_key }, value))
+                Some((Vec2 { y: inner.key, x: inner_key }, value))
             },
             Direction::Right => {
                 let (inner_key, value) = inner.range.next()?;
-                Some((CoordPair { y: inner.key, x: inner_key }, value))
+                Some((Vec2 { y: inner.key, x: inner_key }, value))
             },
         }
     }
@@ -298,19 +331,19 @@ where
         match inner.direction {
             Direction::Up => {
                 let (inner_key, value) = inner.range.next()?;
-                Some((CoordPair { x: inner.key, y: inner_key }, value))
+                Some((Vec2 { x: inner.key, y: inner_key }, value))
             },
             Direction::Down => {
                 let (inner_key, value) = inner.range.next_back()?;
-                Some((CoordPair { x: inner.key, y: inner_key }, value))
+                Some((Vec2 { x: inner.key, y: inner_key }, value))
             },
             Direction::Left => {
                 let (inner_key, value) = inner.range.next()?;
-                Some((CoordPair { y: inner.key, x: inner_key }, value))
+                Some((Vec2 { y: inner.key, x: inner_key }, value))
             },
             Direction::Right => {
                 let (inner_key, value) = inner.range.next_back()?;
-                Some((CoordPair { y: inner.key, x: inner_key }, value))
+                Some((Vec2 { y: inner.key, x: inner_key }, value))
             },
         }
     }
@@ -332,7 +365,7 @@ where
 {
     fn new<'param, Q>(
         map: &'map Map<K, V>,
-        point: CoordPair<&'param Q>,
+        point: Vec2<&'param Q>,
         direction: Direction,
     ) -> Option<Self>
     where
@@ -342,28 +375,42 @@ where
         match direction {
             Direction::Up => {
                 let (key, table) = map.neighbours.x.get_key_value(point.x)?;
-                let range = table.range(.. point.y);
-                Some(Self { key, direction, range })
+                if table.contains_key(point.y) {
+                    let range = table.range(..= point.y);
+                    Some(Self { key, direction, range })
+                } else {
+                    None
+                }
             },
 
             Direction::Down => {
                 let (key, table) = map.neighbours.x.get_key_value(&point.x)?;
-                let range_spec = (Bound::Excluded(point.y), Bound::Unbounded);
-                let range = table.range(range_spec);
-                Some(Self { key, direction, range })
+                if table.contains_key(point.y) {
+                    let range = table.range(point.y ..);
+                    Some(Self { key, direction, range })
+                } else {
+                    None
+                }
             },
 
             Direction::Left => {
                 let (key, table) = map.neighbours.y.get_key_value(&point.y)?;
-                let range = table.range(.. point.x);
-                Some(Self { key, direction, range })
+                if table.contains_key(point.x) {
+                    let range = table.range(..= point.x);
+                    Some(Self { key, direction, range })
+                } else {
+                    None
+                }
             },
 
             Direction::Right => {
                 let (key, table) = map.neighbours.y.get_key_value(&point.y)?;
-                let range_spec = (Bound::Excluded(point.x), Bound::Unbounded);
-                let range = table.range(range_spec);
-                Some(Self { key, direction, range })
+                if table.contains_key(point.x) {
+                    let range = table.range(point.x ..);
+                    Some(Self { key, direction, range })
+                } else {
+                    None
+                }
             },
         }
     }
@@ -383,15 +430,13 @@ impl<'map, K, V> Iterator for Rows<'map, K, V>
 where
     K: Ord,
 {
-    type Item = (CoordPair<&'map K>, &'map V);
+    type Item = (Vec2<&'map K>, &'map V);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some((y, inner)) = &mut self.front {
                 match inner.next() {
-                    Some((x, value)) => {
-                        break Some((CoordPair { x, y }, value))
-                    },
+                    Some((x, value)) => break Some((Vec2 { x, y }, value)),
                     None => self.front = None,
                 }
             }
@@ -400,9 +445,7 @@ where
                 None => {
                     let (y, inner) = self.back.as_mut()?;
                     match inner.next() {
-                        Some((x, value)) => {
-                            break Some((CoordPair { x, y }, value))
-                        },
+                        Some((x, value)) => break Some((Vec2 { x, y }, value)),
                         None => {
                             self.back = None;
                             break None;
@@ -422,9 +465,7 @@ where
         loop {
             if let Some((y, inner)) = &mut self.back {
                 match inner.next() {
-                    Some((x, value)) => {
-                        break Some((CoordPair { x, y }, value))
-                    },
+                    Some((x, value)) => break Some((Vec2 { x, y }, value)),
                     None => self.back = None,
                 }
             }
@@ -433,9 +474,7 @@ where
                 None => {
                     let (y, inner) = self.front.as_mut()?;
                     match inner.next() {
-                        Some((x, value)) => {
-                            break Some((CoordPair { x, y }, value))
-                        },
+                        Some((x, value)) => break Some((Vec2 { x, y }, value)),
                         None => {
                             self.front = None;
                             break None;
@@ -459,7 +498,7 @@ impl<'map, K, V> Iterator for Columns<'map, K, V>
 where
     K: Ord,
 {
-    type Item = (CoordPair<&'map K>, &'map V);
+    type Item = (Vec2<&'map K>, &'map V);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.transposed.next().map(|(coord, value)| (!coord, value))

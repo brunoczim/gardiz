@@ -2,7 +2,7 @@
 mod test;
 
 use crate::{
-    coord::{CoordPair, CoordRef},
+    coord::Vec2,
     direc::{DirecMap, Direction},
     map::Map,
 };
@@ -37,7 +37,7 @@ where
 
     pub fn from_vertices<I>(vertices: I) -> Self
     where
-        I: IntoIterator<Item = CoordPair<T>>,
+        I: IntoIterator<Item = Vec2<T>>,
         T: Clone,
     {
         Self {
@@ -52,7 +52,7 @@ where
         &self.edges
     }
 
-    pub fn vertex_edges<U>(&self, vertex: CoordPair<&U>) -> Option<VertexEdges>
+    pub fn vertex_edges<U>(&self, vertex: Vec2<&U>) -> Option<VertexEdges>
     where
         U: Ord,
         T: Borrow<U>,
@@ -62,8 +62,8 @@ where
 
     pub fn are_connected<U>(
         &self,
-        vertex_a: CoordPair<&U>,
-        vertex_b: CoordPair<&U>,
+        vertex_a: Vec2<&U>,
+        vertex_b: Vec2<&U>,
     ) -> bool
     where
         U: Ord,
@@ -80,16 +80,15 @@ where
 
         edges[direction] && {
             let neighbour = self.edges.first_neighbour(vertex_a, direction);
-            neighbour.map(|found| found.map(|coord| coord.borrow()))
-                == Some(vertex_b)
+            neighbour.map(Vec2::into_borrow) == Some(vertex_b)
         }
     }
 
     pub fn connected_at<U>(
         &self,
-        vertex: CoordPair<&U>,
+        vertex: Vec2<&U>,
         direction: Direction,
-    ) -> Option<CoordPair<&T>>
+    ) -> Option<Vec2<&T>>
     where
         T: Borrow<U>,
         U: Ord,
@@ -101,7 +100,7 @@ where
         }
     }
 
-    pub fn create_vertex(&mut self, vertex: CoordPair<T>) -> bool
+    pub fn create_vertex(&mut self, vertex: Vec2<T>) -> bool
     where
         T: Clone,
     {
@@ -122,11 +121,7 @@ where
         self.edges.create(vertex.clone(), edges)
     }
 
-    pub fn connect<U>(
-        &mut self,
-        vertex_a: CoordPair<&U>,
-        vertex_b: CoordPair<&U>,
-    ) -> bool
+    pub fn connect<U>(&mut self, vertex_a: Vec2<&U>, vertex_b: Vec2<&U>) -> bool
     where
         U: Ord,
         T: Borrow<U>,
@@ -159,8 +154,8 @@ where
 
     pub fn disconnect<U>(
         &mut self,
-        vertex_a: CoordPair<&U>,
-        vertex_b: CoordPair<&U>,
+        vertex_a: Vec2<&U>,
+        vertex_b: Vec2<&U>,
     ) -> bool
     where
         U: Ord,
@@ -192,19 +187,19 @@ where
         }
     }
 
-    pub fn remove_vertex<U>(&mut self, vertex: CoordPair<&U>) -> bool
+    pub fn remove_vertex<U>(&mut self, vertex: Vec2<&U>) -> bool
     where
         U: Ord,
         T: Borrow<U> + Clone,
     {
-        let vertex = vertex.as_coord_ref();
-        let edges = match self.edges.remove(vertex) {
+        let edges = match self.edges.get(vertex).copied() {
             Some(edges) => edges,
             None => return false,
         };
+
         for direction in Direction::iter() {
             if let Some((neighbour, neighbour_edges)) =
-                self.edges.neighbours(vertex, direction).next().clone()
+                self.edges.first_neighbour_data(vertex, direction).clone()
             {
                 let neighbour = neighbour.cloned();
                 let mut neighbour_edges = *neighbour_edges;
@@ -216,22 +211,24 @@ where
                 }
             }
         }
+
+        self.edges.remove(vertex);
         true
     }
 
-    pub fn remove_with_edges<U>(&mut self, vertex: CoordPair<&U>) -> bool
+    pub fn remove_with_edges<U>(&mut self, vertex: Vec2<&U>) -> bool
     where
         U: Ord,
-        T: Borrow<U> + Clone,
+        T: Borrow<U> + Clone + std::fmt::Debug,
     {
-        let vertex = vertex.as_coord_ref();
-        let edges = match self.edges.remove(vertex) {
+        let edges = match self.edges.get(vertex).copied() {
             Some(edges) => edges,
             None => return false,
         };
+
         for direction in Direction::iter() {
             if let Some((neighbour, neighbour_edges)) =
-                self.edges.neighbours(vertex, direction).next().clone()
+                self.edges.first_neighbour_data(vertex, direction).clone()
             {
                 let neighbour = neighbour.cloned();
                 let mut neighbour_edges = *neighbour_edges;
@@ -243,6 +240,8 @@ where
                 }
             }
         }
+
+        self.edges.remove(vertex);
         true
     }
 
@@ -260,7 +259,7 @@ where
     T: Ord,
 {
     graph: &'graph Graph<T>,
-    unvisited: BTreeSet<CoordPair<&'graph T>>,
+    unvisited: BTreeSet<Vec2<&'graph T>>,
 }
 
 impl<'graph, T> Iterator for Components<'graph, T>
