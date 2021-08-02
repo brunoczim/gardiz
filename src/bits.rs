@@ -1,3 +1,6 @@
+//! A collection of traits related to manipulating integer bits or similar
+//! operations, such as (absolute) distance.
+
 use num::{
     traits::{WrappingAdd, WrappingSub},
     Bounded,
@@ -6,15 +9,23 @@ use num::{
 };
 use std::ops::Sub;
 
+/// Trait for bit-casts from unsigned integers to 2's complement signed
+/// integers.
 pub trait CastSigned: Unsigned {
+    /// Type of the target signed version.
     type Target;
 
+    /// Bit-casts the given (`self`) unsigned number into a signed version.
     fn cast_signed(&self) -> Self::Target;
 }
 
+/// Trait for bit-casts from 2's complement signed integers to unsigned
+/// integers.
 pub trait CastUnsigned: Signed {
+    /// Type of the target unsigned version.
     type Target;
 
+    /// Bit-casts the given (`self`) signed number into an unsigned version.
     fn cast_unsigned(&self) -> Self::Target;
 }
 
@@ -45,9 +56,14 @@ cast_signedness! { u64, i64 }
 cast_signedness! { u128, i128 }
 cast_signedness! { usize, isize }
 
+/// Trait for computing absolute distance between two numbers. In general, types
+/// should not worry with this trait, but instead implement [`Sub`] and [`Ord`].
 pub trait Distance<Rhs> {
+    /// Output number type.
     type Output;
 
+    /// Computes the absolute (without sign) distance between the given two
+    /// numbers.
     fn distance(self, other: Rhs) -> Self::Output;
 }
 
@@ -66,7 +82,17 @@ where
     }
 }
 
-pub trait HalfExcess: Unsigned + Bounded {
+/// Trait for getting the "excess" that is the half of an unsigned type's
+/// maximum value, typically `0111...1111`. Types should not worry with this
+/// trait, but instead implement [`Unsigned`] and [`Bounded`], since there is a
+/// blank implementation for them, and there is no other way to implement the
+/// trait (`Unsigned` and `Bounded` are super traits of this trait).
+pub trait HalfExcess
+where
+    Self: Unsigned + Bounded,
+{
+    /// Gets the "excess" that is the half of the maximum value of an unsigned
+    /// type.
     fn half_excess() -> Self;
 }
 
@@ -79,12 +105,21 @@ where
     }
 }
 
+/// Trait for converting unsigned numbers into signed numbers, but instead of a
+/// true bit-cast, this conversion should treat the unsigned number as "excess
+/// of N" number. So, conversion should be equivalent to this: `i = u - N` (i.e.
+/// `N` becomes the new zero).
 pub trait ExcessToSigned
 where
     Self: CastSigned,
 {
+    /// Performs a conversion from an "excess of N" number to a 2's complement
+    /// number. The input is actually unsigned.
     fn excess_to_signed(&self, excess: &Self) -> Self::Target;
 
+    /// Performs a conversion from an "excess of N" number to a 2's complement
+    /// number, where `N` is half the maximum value of the unsigned input
+    /// number.
     fn half_exc_to_signed(&self) -> Self::Target
     where
         Self: HalfExcess,
@@ -102,12 +137,21 @@ where
     }
 }
 
+/// Trait for converting signed numbers into unsigned numbers, but instead of a
+/// true bit-cast, this conversion should treat the unsigned number as "excess
+/// of N" number. So, conversion should be equivalent to this: `u = i + N` (i.e.
+/// `N` becomes the new zero).
 pub trait SignedToExcess
 where
     Self: CastUnsigned,
 {
+    /// Performs a conversion from a 2's complement number into an "excess of N"
+    /// number. The input is actually signed.
     fn signed_to_excess(&self, excess: &Self::Target) -> Self::Target;
 
+    /// Performs a conversion from a 2's complement number into an "excess of N"
+    /// number, where `N` is half the maximum value of the unsigned input
+    /// number.
     fn signed_to_half_exc(&self) -> Self::Target
     where
         Self::Target: HalfExcess,
