@@ -1,4 +1,4 @@
-pub mod excess;
+pub mod bits;
 pub mod axis;
 pub mod direc;
 pub mod coord;

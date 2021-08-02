@@ -3,8 +3,8 @@ mod test;
 
 use crate::{
     axis::Axis,
+    bits::{CastSigned, CastUnsigned, ExcessToSigned, HalfExcess},
     direc::{DirecVector, Direction},
-    excess::{CastSigned, CastUnsigned, ExcessToSigned, HalfExcess},
 };
 use num::{
     integer::Roots,
