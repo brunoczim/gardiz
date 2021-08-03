@@ -1,9 +1,14 @@
+//! A set of coordinates/vectors in a plane optimized for the plane (and related
+//! utilites).
+
 #[cfg(test)]
 mod test;
 
 use crate::{coord::Vec2, direc::Direction, map, map::Map};
 use std::{borrow::Borrow, iter::FromIterator};
 
+/// The set of coordinates/vectors in a plane, optimized for being in the plane.
+/// Members of the set are `Vec2<T>`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Set<T>
 where
@@ -25,14 +30,17 @@ impl<T> Set<T>
 where
     T: Ord,
 {
+    /// Creates a new empty set.
     pub fn new() -> Self {
         Set { inner: Map::new() }
     }
 
+    /// Tests if the set is emtpy.
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
 
+    /// Tests if the set contains a given point.
     pub fn contains<U>(&self, point: Vec2<&U>) -> bool
     where
         T: Borrow<U>,
@@ -41,6 +49,8 @@ where
         self.inner.contains(point)
     }
 
+    /// Returns an iterator to the neighbours of a given point in a straight
+    /// line in the given direction. The starting point is NOT included.
     pub fn neighbours<U>(
         &self,
         point: Vec2<&U>,
@@ -53,6 +63,8 @@ where
         Neighbours { inner: self.inner.neighbours(point, direction) }
     }
 
+    /// Returns an iterator to the neighbours of a given point in a straight
+    /// line in the given direction. The starting point IS included.
     pub fn neighbours_incl<U>(
         &self,
         point: Vec2<&U>,
@@ -65,6 +77,8 @@ where
         Neighbours { inner: self.inner.neighbours_incl(point, direction) }
     }
 
+    /// Returns the nearest neighbour in a straight line of a given point in the
+    /// the given direction.
     pub fn first_neighbour<U>(
         &self,
         point: Vec2<&U>,
@@ -77,6 +91,8 @@ where
         self.inner.first_neighbour(point, direction)
     }
 
+    /// Returns the furthest neighbour in a straight line of a given point in
+    /// the given direction.
     pub fn last_neighbour<U>(
         &self,
         point: Vec2<&U>,
@@ -89,6 +105,8 @@ where
         self.inner.last_neighbour(point, direction)
     }
 
+    /// Inserts the given point in the set. Returns whether the insertion
+    /// actually happened (i.e. the point was not already in the set).
     pub fn insert(&mut self, point: Vec2<T>) -> bool
     where
         T: Clone,
@@ -96,6 +114,8 @@ where
         self.inner.insert(point, ()).is_none()
     }
 
+    /// Removes a point from the set. Returns whether the removal actuall
+    /// happened (i.e. the point was in the set).
     pub fn remove<U>(&mut self, point: Vec2<&U>) -> bool
     where
         U: Ord,
@@ -104,10 +124,16 @@ where
         self.inner.remove(point).is_some()
     }
 
+    /// Returns an iterator over all the points in the set, in the direction of
+    /// rows (first point is the lowest), i.e. all `X` are yielded before going
+    /// to the next `Y`.
     pub fn rows(&self) -> Rows<T> {
         Rows { inner: self.inner.rows() }
     }
 
+    /// Returns an iterator over all the points in the set, in the direction of
+    /// columns (first point is the lowest), i.e. all `Y` are yielded before
+    /// going to the next `X`.
     pub fn columns(&self) -> Columns<T> {
         Columns { inner: self.inner.columns() }
     }
@@ -137,6 +163,8 @@ where
     }
 }
 
+/// Iterator over the neighbours of a given point in a given direction (in a
+/// set). See [`Set::neighbours`] and [`Set::neighbours_incl`].
 #[derive(Debug)]
 pub struct Neighbours<'set, T>
 where
@@ -165,6 +193,8 @@ where
     }
 }
 
+/// Iterator over the points of a set in the direction of rows (in a
+/// set). See [`Set::rows`].
 #[derive(Debug)]
 pub struct Rows<'set, T>
 where
@@ -193,6 +223,8 @@ where
     }
 }
 
+/// Iterator over the points of a set in the direction of columns (in a
+/// set). See [`Set::columns`].
 #[derive(Debug)]
 pub struct Columns<'set, T>
 where

@@ -376,7 +376,8 @@ impl<T> Rect<T> {
 }
 
 impl<T, S> Rect<T, S> {
-    /// Iterator over the columns of this rectangle (included internal ones).
+    /// Iterator over all coordinates of this rectangle in the direction of
+    /// columns.
     pub fn columns<'this>(&'this self) -> RectColumns<T>
     where
         &'this S: Sub<S, Output = T>,
@@ -394,7 +395,7 @@ impl<T, S> Rect<T, S> {
         RectColumns { inner }
     }
 
-    /// Iterator over the rows of this rectangle (included internal ones).
+    /// Iterator over all coordinates of this rectangle in the direction of .
     pub fn rows<'this>(&'this self) -> RectRows<T>
     where
         &'this S: Sub<S, Output = T>,

@@ -1,3 +1,6 @@
+//! A map from coordinates/vectors to arbitrary data, optimized for the plane
+//! (and related items).
+
 #[cfg(test)]
 mod test;
 
@@ -9,6 +12,8 @@ use std::{
     mem,
 };
 
+/// Map of coordinates in a plane to arbitrary data. Optimized given the fact
+/// the coordinates/vectors are in the plane. Keys of the map are `Vec2<K>`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Map<K, V>
 where
@@ -30,14 +35,17 @@ impl<K, V> Map<K, V>
 where
     K: Ord,
 {
+    /// Creates a new empty coordinate map.
     pub fn new() -> Self {
         Map { neighbours: Vec2::from_axes(|_| BTreeMap::new()) }
     }
 
+    /// Returns whether the map is empty.
     pub fn is_empty(&self) -> bool {
         self.neighbours.x.is_empty()
     }
 
+    /// Attempts to get the data associated with the given point.
     pub fn get<Q>(&self, point: Vec2<&Q>) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -46,6 +54,7 @@ where
         self.neighbours.x.get(point.x).and_then(|ys| ys.get(&point.y))
     }
 
+    /// Tests if the map contains the given point.
     pub fn contains<Q>(&self, point: Vec2<&Q>) -> bool
     where
         K: Borrow<Q>,
@@ -57,6 +66,10 @@ where
             .map_or(false, |ys| ys.contains_key(&point.y))
     }
 
+    /// Returns an iterator to the neighbours of a given point in a straight
+    /// line in the given direction. The starting point is NOT included. For
+    /// every point yielded by the iterator, the associated data is also
+    /// returned.
     pub fn neighbours<Q>(
         &self,
         point: Vec2<&Q>,
@@ -71,6 +84,10 @@ where
         iterator
     }
 
+    /// Returns an iterator to the neighbours of a given point in a straight
+    /// line in the given direction. The starting point IS included. For
+    /// every point yielded by the iterator, the associated data is also
+    /// returned.
     pub fn neighbours_incl<Q>(
         &self,
         point: Vec2<&Q>,
@@ -83,6 +100,8 @@ where
         Neighbours { inner: NeighboursInner::new(self, point, direction) }
     }
 
+    /// Returns the nearest neighbour in a straight line of a given point in the
+    /// the given direction WITHOUT the associated data.
     pub fn first_neighbour<Q>(
         &self,
         point: Vec2<&Q>,
@@ -95,6 +114,8 @@ where
         self.first_neighbour_data(point, direction).map(|(key, _)| key)
     }
 
+    /// Returns the nearest neighbour in a straight line of a given point in the
+    /// given direction WITH the associated data.
     pub fn first_neighbour_data<Q>(
         &self,
         point: Vec2<&Q>,
@@ -107,6 +128,8 @@ where
         self.neighbours(point, direction).next()
     }
 
+    /// Returns the furthest neighbour in a straight line of a given point in
+    /// the given direction WITHOUT the associated data.
     pub fn last_neighbour<Q>(
         &self,
         point: Vec2<&Q>,
@@ -119,6 +142,8 @@ where
         self.last_neighbour_data(point, direction).map(|(key, _)| key)
     }
 
+    /// Returns the furthest neighbour in a straight line of a given point in
+    /// the given direction WITH the associated data.
     pub fn last_neighbour_data<Q>(
         &self,
         point: Vec2<&Q>,
@@ -131,6 +156,8 @@ where
         self.neighbours(point, direction).next_back()
     }
 
+    /// Inserts the given point with its associated data. A possible previous
+    /// value is returned.
     pub fn insert(&mut self, point: Vec2<K>, value: V) -> Option<V>
     where
         K: Clone,
@@ -160,6 +187,8 @@ where
         old.x
     }
 
+    /// Creates an entry at the given point with its associated data. Fails if
+    /// there already is an entry for that point. Returns whether it succeeded.
     pub fn create(&mut self, point: Vec2<K>, value: V) -> bool
     where
         K: Clone,
@@ -192,6 +221,9 @@ where
         result.x
     }
 
+    /// Updates an existing point's entry with the given value. The entry must
+    /// exist. Returns `Ok(old_value)` if successful, but `Err(attempted_value)`
+    /// if failing.
     pub fn update<Q>(&mut self, point: Vec2<&Q>, value: V) -> Result<V, V>
     where
         K: Borrow<Q>,
@@ -219,6 +251,8 @@ where
         old.x
     }
 
+    /// Removes the given point entry from the from the map. Returns the data
+    /// associated with the point, if successful.
     pub fn remove<Q>(&mut self, point: Vec2<&Q>) -> Option<V>
     where
         K: Borrow<Q>,
@@ -240,10 +274,16 @@ where
         removed.x
     }
 
+    /// Returns an iterator over all entries, by running through the "rows" of
+    /// the map, (with the first entries having the lowest keys), i.e. all `X`
+    /// are yielded before going to the next `Y`.
     pub fn rows(&self) -> Rows<K, V> {
         Rows { outer: self.neighbours.y.iter(), front: None, back: None }
     }
 
+    /// Returns an iterator over all entries, by running through the "columns"
+    /// of the map, (with the first entries having the lowest keys), i.e. all
+    /// `Y` are yielded before going to the next `X`.
     pub fn columns(&self) -> Columns<K, V> {
         Columns {
             transposed: Rows {
@@ -285,6 +325,8 @@ where
     }
 }
 
+/// Iterator over the neighbours of a point in a map. See [`Map::neighbours`]
+/// and [`Map::neighbours_incl`].
 #[derive(Debug)]
 pub struct Neighbours<'map, K, V>
 where
@@ -416,6 +458,7 @@ where
     }
 }
 
+/// Iterator over entries of a map in the direction of rows. See [`Map::rows`].
 #[derive(Debug)]
 pub struct Rows<'map, K, V>
 where
@@ -486,6 +529,8 @@ where
     }
 }
 
+/// Iterator over entries of a map in the direction of columns. See
+/// [`Map::columns`].
 #[derive(Debug)]
 pub struct Columns<'map, K, V>
 where
