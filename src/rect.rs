@@ -1,3 +1,5 @@
+//! This module exports rectangle utilities.
+
 #[cfg(test)]
 mod test;
 
@@ -14,13 +16,18 @@ use num::traits::{
 };
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
+/// A rectangle in a plane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Rect<T, S = T> {
+    /// Starting top-left point.
     pub start: Vec2<T>,
+    /// Size at each dimension.
     pub size: Vec2<S>,
 }
 
 impl<T, S> Rect<T, S> {
+    /// Builds the rectangle from the given range `start .. end` (i.e. end
+    /// excluded).
     pub fn from_range<U>(start: Vec2<T>, end: Vec2<U>) -> Self
     where
         T: Clone,
@@ -32,6 +39,8 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
+    /// Tries to make a rectangle from a given range (end excluded), and returns
+    /// `None` if overflows.
     pub fn try_from_range(start: Vec2<T>, end: Vec2<T>) -> Option<Self>
     where
         T: Clone + CheckedSub,
@@ -42,6 +51,8 @@ impl<T> Rect<T> {
 }
 
 impl<T, S> Rect<T, S> {
+    /// Builds the rectangle from the given inclusive range `start ..= end`
+    /// (i.e. end included).
     pub fn from_range_incl<Z>(start: Vec2<T>, end: Vec2<T>) -> Self
     where
         T: Sub<Output = Z> + Clone + Ord,
@@ -58,6 +69,8 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
+    /// Tries to make a rectangle from a given range (end included), and returns
+    /// `None` if overflows.
     pub fn try_from_range_incl(start: Vec2<T>, end: Vec2<T>) -> Option<Self>
     where
         T: CheckedAdd + CheckedSub + One + Zero + Ord + Clone,
@@ -73,6 +86,7 @@ impl<T> Rect<T> {
 }
 
 impl<T, S> Rect<T, S> {
+    /// Returns whether the rectangle is empty (i.e. size is zero).
     pub fn is_empty(&self) -> bool
     where
         S: Zero,
@@ -80,6 +94,8 @@ impl<T, S> Rect<T, S> {
         self.size.x.is_zero() || self.size.y.is_zero()
     }
 
+    /// Returns coordinates one unit past the end (bottom-right) of the
+    /// rectangle, i.e. the end excluded from the rectangle.
     pub fn end(self) -> Vec2<T::Output>
     where
         T: Add<S>,
@@ -89,6 +105,8 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
+    /// Returns coordinates one unit past the end (bottom-right), wrapping
+    /// around on overflow.
     pub fn wrapping_end(&self) -> Vec2<T>
     where
         T: WrappingAdd,
@@ -96,6 +114,8 @@ impl<T> Rect<T> {
         self.start.wrapping_add(&self.size)
     }
 
+    /// Returns coordinates one unit past the end (bottom-right), saturating on
+    /// overflow.
     pub fn saturating_end(&self) -> Vec2<T>
     where
         T: SaturatingAdd,
@@ -103,6 +123,8 @@ impl<T> Rect<T> {
         self.start.saturating_add(&self.size)
     }
 
+    /// Returns coordinates one unit past the end (bottom-right), returning
+    /// `None` on overflow.
     pub fn checked_end(&self) -> Option<Vec2<T>>
     where
         T: CheckedAdd,
@@ -112,6 +134,8 @@ impl<T> Rect<T> {
 }
 
 impl<T, S> Rect<T, S> {
+    /// Returns coordinates one unit past the end (bottom-right), but without
+    /// taking the rectangle (by reference).
     pub fn end_ref<'this, U>(&'this self) -> Vec2<U>
     where
         &'this T: Add<&'this S, Output = U>,
@@ -119,6 +143,8 @@ impl<T, S> Rect<T, S> {
         &self.start + &self.size
     }
 
+    /// Returns the last coordinates (bottom-right) of the rectangle, i.e.
+    /// returns an included end.
     pub fn end_inclusive<U, V>(self) -> Vec2<V>
     where
         S: Sub<Output = U> + One + Zero,
@@ -133,6 +159,8 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
+    /// Returns the last coordinates (bottom-right) of the rectangle, wrapping
+    /// around on overflow.
     pub fn wrapping_end_incl(&self) -> Vec2<T>
     where
         T: WrappingAdd + WrappingSub + One,
@@ -140,6 +168,8 @@ impl<T> Rect<T> {
         self.start.wrapping_add(&self.size).wrapping_sub(&Vec2::<T>::one())
     }
 
+    /// Returns the last coordinates (bottom-right) of the rectangle, saturating
+    /// on overflow.
     pub fn saturating_end_incl(&self) -> Vec2<T>
     where
         T: SaturatingAdd + SaturatingSub + One + Zero,
@@ -152,6 +182,8 @@ impl<T> Rect<T> {
         }
     }
 
+    /// Returns the last coordinates (bottom-right) of the rectangle, returning
+    /// `None` on overflow.
     pub fn checked_end_incl(&self) -> Option<Vec2<T>>
     where
         T: CheckedAdd + CheckedSub + One + Zero,
@@ -166,6 +198,8 @@ impl<T> Rect<T> {
 }
 
 impl<T, S> Rect<T, S> {
+    /// Returns the last coordinates (bottom-right) of the rectangle, but
+    /// without taking the rectangle (by reference).
     pub fn end_incl_ref<'this, U, V>(&'this self) -> Vec2<V>
     where
         &'this S: Sub<S, Output = U>,
@@ -180,6 +214,9 @@ impl<T, S> Rect<T, S> {
         }
     }
 
+    /// Returns last included coordinates of the rectangle (bottom-right),
+    /// but if the rectangle is empty, the output is `None`. With this, it is
+    /// possible to extract the end of a "full rectangle".
     pub fn end_non_empty<U, V>(self) -> Option<Vec2<V>>
     where
         S: Sub<Output = U> + One + Zero,
@@ -192,6 +229,9 @@ impl<T, S> Rect<T, S> {
         }
     }
 
+    /// Returns last included coordinates of the rectangle (bottom-right), but
+    /// if the rectangle is empty, the output is `None`, and without taking the
+    /// rectangle, computing by reference instead.
     pub fn end_non_empty_ref<'this, U, V>(&'this self) -> Option<Vec2<V>>
     where
         &'this S: Sub<S, Output = U>,
@@ -206,6 +246,7 @@ impl<T, S> Rect<T, S> {
         }
     }
 
+    /// Tests whether a given point is inside the rectangle.
     pub fn has_point<'this, U>(&'this self, point: Vec2<T>) -> bool
     where
         &'this S: Sub<S, Output = U>,
@@ -223,6 +264,7 @@ impl<T, S> Rect<T, S> {
         })
     }
 
+    /// Tests whether two rectangles overlap in area.
     pub fn overlaps<'params, U>(&'params self, other: &'params Self) -> bool
     where
         &'params S: Sub<S, Output = U>,
@@ -242,6 +284,8 @@ impl<T, S> Rect<T, S> {
         })
     }
 
+    /// Computes the overlapped area between two rectangles. An empty rectange
+    /// is produced if both do not overlap.
     pub fn overlapped<'params, U, Z>(
         &'params self,
         other: &'params Self,
@@ -262,6 +306,8 @@ impl<T, S> Rect<T, S> {
 }
 
 impl<T> Rect<T> {
+    /// Computes overlapped area between two rectangles, wrapping around on
+    /// overflow.
     pub fn wrapping_overlapped<'params>(
         &'params self,
         other: &'params Self,
@@ -287,6 +333,7 @@ impl<T> Rect<T> {
         Rect { start: start.cloned(), size }
     }
 
+    /// Computes overlapped area between two rectangles, saturating on overflow.
     pub fn saturating_overlapped<'params>(
         &'params self,
         other: &'params Self,
@@ -305,6 +352,8 @@ impl<T> Rect<T> {
         Rect { start: start.cloned(), size }
     }
 
+    /// Computes overlapped area between two rectangles, returning `None` on
+    /// overflow.
     pub fn checked_overlapped<'params>(
         &'params self,
         other: &'params Self,
@@ -327,6 +376,7 @@ impl<T> Rect<T> {
 }
 
 impl<T, S> Rect<T, S> {
+    /// Iterator over the columns of this rectangle (included internal ones).
     pub fn columns<'this>(&'this self) -> RectColumns<T>
     where
         &'this S: Sub<S, Output = T>,
@@ -344,6 +394,7 @@ impl<T, S> Rect<T, S> {
         RectColumns { inner }
     }
 
+    /// Iterator over the rows of this rectangle (included internal ones).
     pub fn rows<'this>(&'this self) -> RectRows<T>
     where
         &'this S: Sub<S, Output = T>,
@@ -361,6 +412,7 @@ impl<T, S> Rect<T, S> {
         RectRows { inner }
     }
 
+    /// Iterator over the inner borders of this rectangle.
     pub fn borders<'this>(&'this self) -> RectBorders<T>
     where
         &'this S: Sub<S, Output = T>,
@@ -379,6 +431,7 @@ impl<T, S> Rect<T, S> {
     }
 }
 
+/// Iterator over columns of the rectangle. See [`Rect::columns`].
 #[derive(Debug)]
 pub struct RectColumns<T> {
     inner: Option<RectColumnsInner<T>>,
@@ -449,6 +502,7 @@ where
     }
 }
 
+/// Iterator over rows of the rectangle. See [`Rect::rows`].
 #[derive(Debug)]
 pub struct RectRows<T> {
     inner: Option<RectRowsInner<T>>,
@@ -519,6 +573,7 @@ where
     }
 }
 
+/// Iterator over inner borders of the rectangle. See [`Rect::borders`].
 #[derive(Debug)]
 pub struct RectBorders<T> {
     inner: Option<RectBordersInner<T>>,
