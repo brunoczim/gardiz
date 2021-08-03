@@ -1,3 +1,7 @@
+//! A graph of points in a plane.
+
+// TODO: Make connections not overlap
+
 #[cfg(test)]
 mod test;
 
@@ -8,8 +12,11 @@ use crate::{
 };
 use std::{borrow::Borrow, collections::BTreeSet};
 
+/// The edges of a vertex. More specifically, at which direction the vertex is
+/// connected?
 pub type VertexEdges = DirecMap<bool>;
 
+/// A graph of points in a plane.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Graph<T>
 where
@@ -31,10 +38,12 @@ impl<T> Graph<T>
 where
     T: Ord,
 {
+    /// Creates a new empty graph.
     pub fn new() -> Self {
         Self { edges: Map::new() }
     }
 
+    /// Creates the graph from a list of vertices (and no edges!).
     pub fn from_vertices<I>(vertices: I) -> Self
     where
         I: IntoIterator<Item = Vec2<T>>,
@@ -48,10 +57,13 @@ where
         }
     }
 
-    pub fn edges(&self) -> &Map<T, DirecMap<bool>> {
+    /// Returns the underlying map of vertices to edge flags.
+    pub fn edges(&self) -> &Map<T, VertexEdges> {
         &self.edges
     }
 
+    /// Gets the edge flags of the given vertex, the vertex is in the graph in
+    /// the first place.
     pub fn vertex_edges<U>(&self, vertex: Vec2<&U>) -> Option<VertexEdges>
     where
         U: Ord,
@@ -60,6 +72,7 @@ where
         self.edges.get(vertex).copied()
     }
 
+    /// Tests if the given two vertices are connected.
     pub fn are_connected<U>(
         &self,
         vertex_a: Vec2<&U>,
@@ -84,6 +97,8 @@ where
         }
     }
 
+    /// Gets the vertex connected with the given vertex in the given direction,
+    /// if there is an edge in this direction.
     pub fn connected_at<U>(
         &self,
         vertex: Vec2<&U>,
@@ -100,6 +115,8 @@ where
         }
     }
 
+    /// Creates a new vertex in the graph (without creating edges!). Returns if
+    /// the vertex was really created (i.e. vertex not already there).
     pub fn create_vertex(&mut self, vertex: Vec2<T>) -> bool
     where
         T: Clone,
@@ -121,6 +138,8 @@ where
         self.edges.create(vertex.clone(), edges)
     }
 
+    /// Connects the given two vertices and returns if they were really
+    /// connected (i.e. they were previously disconnected).
     pub fn connect<U>(&mut self, vertex_a: Vec2<&U>, vertex_b: Vec2<&U>) -> bool
     where
         U: Ord,
@@ -152,6 +171,8 @@ where
         }
     }
 
+    /// Disconnects the given two vertices and returns if they were really
+    /// disconnected (i.e. they were previously connected).
     pub fn disconnect<U>(
         &mut self,
         vertex_a: Vec2<&U>,
@@ -187,6 +208,9 @@ where
         }
     }
 
+    /// Removes a vertex but attempts to connect edges between its neighbours,
+    /// if the target vertex had edges in both directions. Returns if the vertex
+    /// was really removed (i.e. it was in the graph).
     pub fn remove_vertex<U>(&mut self, vertex: Vec2<&U>) -> bool
     where
         U: Ord,
@@ -216,6 +240,8 @@ where
         true
     }
 
+    /// Removes a vertex and all its edges. Returns if the vertex was really
+    /// removed (i.e. it was in the graph).
     pub fn remove_with_edges<U>(&mut self, vertex: Vec2<&U>) -> bool
     where
         U: Ord,
@@ -245,6 +271,9 @@ where
         true
     }
 
+    /// Creates iterator over connected components of the graph. E.g. each
+    /// "island" in the graph makes a new subgraph (and an item of the
+    /// iterator).
     pub fn components(&self) -> Components<T> {
         Components {
             graph: self,
@@ -253,6 +282,7 @@ where
     }
 }
 
+/// Iterator over connected components of the graph. See [`Graph::components`].
 #[derive(Debug, Clone)]
 pub struct Components<'graph, T>
 where
