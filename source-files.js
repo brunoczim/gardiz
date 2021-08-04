@@ -1,0 +1,10 @@
+var N = null;var sourcesIndex = {};
+sourcesIndex["gardiz"] = {"name":"","files":["axis.rs","bits.rs","coord.rs","direc.rs","graph.rs","lib.rs","map.rs","rect.rs","set.rs"]};
+sourcesIndex["num"] = {"name":"","files":["lib.rs"]};
+sourcesIndex["num_bigint"] = {"name":"","dirs":[{"name":"bigint","files":["addition.rs","bits.rs","convert.rs","division.rs","multiplication.rs","power.rs","shift.rs","subtraction.rs"]},{"name":"biguint","files":["addition.rs","bits.rs","convert.rs","division.rs","iter.rs","monty.rs","multiplication.rs","power.rs","shift.rs","subtraction.rs"]}],"files":["bigint.rs","biguint.rs","lib.rs","macros.rs"]};
+sourcesIndex["num_complex"] = {"name":"","files":["cast.rs","lib.rs","pow.rs"]};
+sourcesIndex["num_integer"] = {"name":"","files":["average.rs","lib.rs","roots.rs"]};
+sourcesIndex["num_iter"] = {"name":"","files":["lib.rs"]};
+sourcesIndex["num_rational"] = {"name":"","files":["lib.rs","pow.rs"]};
+sourcesIndex["num_traits"] = {"name":"","dirs":[{"name":"ops","files":["checked.rs","inv.rs","mod.rs","mul_add.rs","overflowing.rs","saturating.rs","wrapping.rs"]}],"files":["bounds.rs","cast.rs","float.rs","identities.rs","int.rs","lib.rs","macros.rs","pow.rs","real.rs","sign.rs"]};
+createSourceSidebar();
