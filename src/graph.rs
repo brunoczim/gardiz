@@ -6,11 +6,18 @@
 mod test;
 
 use crate::{
+    bits::Distance,
     coord::Vec2,
-    direc::{DirecMap, Direction},
+    direc::{DirecMap, DirecVector, Direction},
     map::Map,
 };
-use std::{borrow::Borrow, collections::BTreeSet};
+use num::{CheckedAdd, CheckedSub, One, Zero};
+use std::{
+    borrow::Borrow,
+    collections::{BTreeMap, BTreeSet, HashMap},
+    hash::Hash,
+    ops::AddAssign,
+};
 
 /// The edges of a vertex. More specifically, at which direction the vertex is
 /// connected?
@@ -279,6 +286,234 @@ where
             graph: self,
             unvisited: self.edges.rows().map(|(key, _)| key).collect(),
         }
+    }
+
+    pub fn make_path<'penalty, U, F>(
+        &mut self,
+        start: Vec2<T>,
+        goal: Vec2<T>,
+        penalty: &'penalty U,
+        valid_points: F,
+    ) -> Option<Vec<DirecVector<T>>>
+    where
+        T: Clone + Borrow<U> + Hash,
+        T: Zero + One + AddAssign + CheckedAdd + CheckedSub,
+        T: AddAssign<&'penalty U>,
+        U: Ord,
+        F: FnMut(&Vec2<T>) -> bool,
+    {
+        PathMakerBuf::new().make_path(self, start, goal, penalty, valid_points)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PathMakerBuf<T>
+where
+    T: Clone + Hash + Ord,
+    T: Zero + One + AddAssign + CheckedAdd + CheckedSub,
+{
+    predecessors: HashMap<Vec2<T>, Vec2<T>>,
+    travelled: HashMap<Vec2<T>, Cost<T>>,
+    points: BTreeMap<Vec2<T>, Cost<T>>,
+}
+
+impl<T> PathMakerBuf<T>
+where
+    T: Clone + Hash + Ord,
+    T: Zero + One + AddAssign + CheckedAdd + CheckedSub,
+{
+    pub fn new() -> Self {
+        Self {
+            predecessors: HashMap::new(),
+            travelled: HashMap::new(),
+            points: BTreeMap::new(),
+        }
+    }
+
+    pub fn make_path<'graph, 'penalty, U, F>(
+        &mut self,
+        graph: &'graph mut Graph<T>,
+        start: Vec2<T>,
+        goal: Vec2<T>,
+        penalty: &'penalty U,
+        valid_points: F,
+    ) -> Option<Vec<DirecVector<T>>>
+    where
+        T: Clone + Borrow<U>,
+        T: Zero + One + AddAssign + AddAssign<&'penalty U>,
+        U: Ord,
+        F: FnMut(&Vec2<T>) -> bool,
+    {
+        let path =
+            PathMakerCall::new(self, graph, start, goal, penalty, valid_points)
+                .run();
+        self.travelled.clear();
+        self.predecessors.clear();
+        self.points.clear();
+        path
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct PathMakerCall<'maker, 'graph, 'penalty, T, U, F>
+where
+    T: Clone + Hash + Ord + Borrow<U>,
+    T: Zero + One,
+    T: AddAssign + CheckedAdd + CheckedSub + AddAssign<&'penalty U>,
+    U: Ord,
+    F: FnMut(&Vec2<T>) -> bool,
+    'graph: 'maker,
+{
+    buf: &'maker mut PathMakerBuf<T>,
+    graph: &'graph mut Graph<T>,
+    start: Vec2<T>,
+    goal: Vec2<T>,
+    penalty: &'penalty U,
+    valid_points: F,
+}
+
+impl<'maker, 'graph, 'penalty, T, U, F>
+    PathMakerCall<'maker, 'graph, 'penalty, T, U, F>
+where
+    T: Clone + Hash + Ord + Borrow<U>,
+    T: Zero + One,
+    T: AddAssign + CheckedAdd + CheckedSub + AddAssign<&'penalty U>,
+    U: Ord,
+    F: FnMut(&Vec2<T>) -> bool,
+    'graph: 'maker,
+{
+    pub fn new(
+        buf: &'maker mut PathMakerBuf<T>,
+        graph: &'graph mut Graph<T>,
+        start: Vec2<T>,
+        goal: Vec2<T>,
+        penalty: &'penalty U,
+        valid_points: F,
+    ) -> Self {
+        let this = Self {
+            buf,
+            graph,
+            start: start.clone(),
+            goal,
+            penalty,
+            valid_points,
+        };
+        this.buf.travelled.insert(start.clone(), Cost::new());
+        this.buf.points.insert(start, Cost::new());
+        this
+    }
+
+    fn run(&mut self) -> Option<Vec<DirecVector<T>>> {
+        loop {
+            // TODO: replace by pop_first when stable.
+            let key = self.buf.points.keys().next()?.clone();
+            let (current, cost) = self.buf.points.remove_entry(&key).unwrap();
+
+            if current == self.goal {
+                break Some(self.assemble_path(cost));
+            }
+
+            self.eval_neighbours(current);
+        }
+    }
+
+    fn assemble_path(&mut self, _cost: Cost<T>) -> Vec<DirecVector<T>> {
+        let mut steps = Vec::<DirecVector<_>>::new();
+        let mut last_vertex = &self.goal;
+        let mut current = &self.goal;
+
+        while current != &self.start {
+            let prev = self.buf.predecessors.get(&current).unwrap();
+            let direction = prev.direction_to(current).unwrap();
+
+            match steps.last_mut() {
+                Some(step) if step.direction == direction => {
+                    step.magnitude += T::one()
+                },
+                _ => {
+                    if last_vertex != current {
+                        self.graph.create_vertex(current.clone());
+                        self.graph.connect::<T>(
+                            last_vertex.as_ref(),
+                            current.as_ref(),
+                        );
+                        last_vertex = current;
+                    }
+                    steps.push(DirecVector { magnitude: T::one(), direction });
+                },
+            }
+
+            if self.graph.edges().contains::<T>(prev.as_ref()) {
+                self.graph.connect::<T>(last_vertex.as_ref(), prev.as_ref());
+                last_vertex = prev;
+            }
+
+            current = prev;
+        }
+
+        steps.reverse();
+        steps
+    }
+
+    fn eval_neighbours(&mut self, current: Vec2<T>) {
+        for direction in Direction::iter() {
+            if let Some(neighbour) = current
+                .clone()
+                .checked_move(direction)
+                .filter(|point| (self.valid_points)(point))
+            {
+                let mut attempt =
+                    self.buf.travelled.get(&current).unwrap().clone();
+                attempt.distance += T::one();
+
+                let is_turning = self
+                    .buf
+                    .predecessors
+                    .get(&current)
+                    .map(|prev| prev.direction_to(&current) == Some(direction))
+                    .unwrap_or(false);
+
+                if is_turning {
+                    attempt.turns += T::one();
+                    attempt.distance += self.penalty;
+                }
+
+                if self
+                    .buf
+                    .travelled
+                    .get(&neighbour)
+                    .map_or(true, |cost| attempt < *cost)
+                {
+                    self.buf
+                        .predecessors
+                        .insert(neighbour.clone(), current.clone());
+                    self.buf
+                        .travelled
+                        .insert(neighbour.clone(), attempt.clone());
+                    let heuristics = neighbour
+                        .clone()
+                        .distance(self.goal.clone())
+                        .fold(T::zero(), |coord_a, coord_b| coord_a + coord_b);
+                    attempt.distance += heuristics;
+                    self.buf.points.insert(neighbour, attempt);
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+struct Cost<T> {
+    distance: T,
+    turns: T,
+}
+
+impl<T> Cost<T> {
+    fn new() -> Self
+    where
+        T: Zero,
+    {
+        Self { distance: T::zero(), turns: T::zero() }
     }
 }
 
