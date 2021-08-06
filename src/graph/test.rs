@@ -476,3 +476,41 @@ fn a_star() {
         ]
     );
 }
+
+#[test]
+fn a_star_irregular() {
+    let mut graph = make_a_star_graph();
+    let start = Vec2 { x: 0, y: 0 };
+    let goal = Vec2 { x: 5, y: 7 };
+    let penalty = 2;
+    let valid_points = |point: &Vec2<u16>| {
+        point.x < 4 && point.y < 3
+            || point.x >= 3 && point.y >= 3 && point.x < 6 && point.y < 5
+            || point.x >= 2 && point.y >= 5 && point.x < 5 && point.y < 6
+            || point.x >= 1 && point.y >= 6 && point.x < 3 && point.y < 8
+            || point.y >= 8 && point.x < 10 && point.y < 10
+            || point.x >= 4 && point.y >= 7 && point.x < 12 && point.y < 12
+    };
+
+    let directions =
+        graph.make_path(&start, &goal, &penalty, valid_points).unwrap();
+
+    assert_eq!(
+        directions,
+        vec![
+            // x = 0, y = 0
+            // x = 3, y = 0
+            DirecVector { direction: Direction::Right, magnitude: 3 },
+            // x = 3, y = 5
+            DirecVector { direction: Direction::Down, magnitude: 5 },
+            // x = 2, y = 5
+            DirecVector { direction: Direction::Left, magnitude: 1 },
+            // x = 2, y = 8
+            DirecVector { direction: Direction::Down, magnitude: 3 },
+            // x = 5, y = 8
+            DirecVector { direction: Direction::Right, magnitude: 3 },
+            // x = 5, y = 7
+            DirecVector { direction: Direction::Up, magnitude: 1 },
+        ]
+    );
+}

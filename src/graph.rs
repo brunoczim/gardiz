@@ -415,7 +415,7 @@ where
 
     fn run(&mut self) -> Option<Vec<DirecVector<T>>> {
         loop {
-            let (current, cmp::Reverse(cost)) = self.buf.points.pop().unwrap();
+            let (current, cmp::Reverse(cost)) = self.buf.points.pop()?;
 
             if current == *self.goal {
                 break Some(self.assemble_path(cost));
