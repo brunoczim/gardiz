@@ -1,6 +1,6 @@
 //! A graph of points in a plane.
 
-// TODO: Make connections not overlap
+// TODO?: Make connections not overlap
 
 #[cfg(test)]
 mod test;
@@ -288,24 +288,32 @@ where
         }
     }
 
-    pub fn make_path<'penalty, U, F>(
+    /// Makes a path from the given starting point till the "goal" point and
+    /// creates intermediate points in the graph. The algorithm chooses the
+    /// smallest path between the two points. It is also possible to specify
+    /// a "penalty" added to the cost of paths when they turn. Recomended values
+    /// for "penalty" are `0`, `1` or `2`. For minimizing turns, `2` is
+    /// strongly recommended. The only points actually used are the ones
+    /// validated by the given function `valid_points`.
+    pub fn make_path<'points, F>(
         &mut self,
-        start: Vec2<T>,
-        goal: Vec2<T>,
-        penalty: &'penalty U,
+        start: &'points Vec2<T>,
+        goal: &'points Vec2<T>,
+        penalty: &'points T,
         valid_points: F,
     ) -> Option<Vec<DirecVector<T>>>
     where
-        T: Clone + Borrow<U> + Hash,
+        T: Clone + Hash,
         T: Zero + One + AddAssign + CheckedAdd + CheckedSub,
-        T: AddAssign<&'penalty U>,
-        U: Ord,
+        T: AddAssign<&'points T>,
         F: FnMut(&Vec2<T>) -> bool,
     {
         PathMakerBuf::new().make_path(self, start, goal, penalty, valid_points)
     }
 }
 
+/// A buffer for an A* search algorithm useful for saving a few deallocations
+/// and allocations when performing lots of searches. See [`Graph::make_path`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PathMakerBuf<T>
 where
@@ -315,6 +323,16 @@ where
     predecessors: HashMap<Vec2<T>, Vec2<T>>,
     travelled: HashMap<Vec2<T>, Cost<T>>,
     points: BTreeMap<Vec2<T>, Cost<T>>,
+}
+
+impl<T> Default for PathMakerBuf<T>
+where
+    T: Clone + Hash + Ord,
+    T: Zero + One + AddAssign + CheckedAdd + CheckedSub,
+{
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<T> PathMakerBuf<T>
@@ -330,23 +348,24 @@ where
         }
     }
 
-    pub fn make_path<'graph, 'penalty, U, F>(
+    /// Performs the A* search algorithm using this buffer. See
+    /// [`Graph::make_path`].
+    pub fn make_path<'graph, 'points, F>(
         &mut self,
         graph: &'graph mut Graph<T>,
-        start: Vec2<T>,
-        goal: Vec2<T>,
-        penalty: &'penalty U,
+        start: &'points Vec2<T>,
+        goal: &'points Vec2<T>,
+        penalty: &'points T,
         valid_points: F,
     ) -> Option<Vec<DirecVector<T>>>
     where
-        T: Clone + Borrow<U>,
-        T: Zero + One + AddAssign + AddAssign<&'penalty U>,
-        U: Ord,
+        T: Clone,
+        T: Zero + One + AddAssign + AddAssign<&'points T>,
         F: FnMut(&Vec2<T>) -> bool,
     {
-        let path =
-            PathMakerCall::new(self, graph, start, goal, penalty, valid_points)
-                .run();
+        let mut call =
+            PathMakerCall::new(self, graph, start, goal, penalty, valid_points);
+        let path = call.run();
         self.travelled.clear();
         self.predecessors.clear();
         self.points.clear();
@@ -355,51 +374,40 @@ where
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct PathMakerCall<'maker, 'graph, 'penalty, T, U, F>
+struct PathMakerCall<'maker, 'graph, 'points, T, F>
 where
-    T: Clone + Hash + Ord + Borrow<U>,
+    T: Clone + Hash + Ord,
     T: Zero + One,
-    T: AddAssign + CheckedAdd + CheckedSub + AddAssign<&'penalty U>,
-    U: Ord,
+    T: AddAssign + CheckedAdd + CheckedSub + AddAssign<&'points T>,
     F: FnMut(&Vec2<T>) -> bool,
     'graph: 'maker,
 {
     buf: &'maker mut PathMakerBuf<T>,
     graph: &'graph mut Graph<T>,
-    start: Vec2<T>,
-    goal: Vec2<T>,
-    penalty: &'penalty U,
+    start: &'points Vec2<T>,
+    goal: &'points Vec2<T>,
+    penalty: &'points T,
     valid_points: F,
 }
 
-impl<'maker, 'graph, 'penalty, T, U, F>
-    PathMakerCall<'maker, 'graph, 'penalty, T, U, F>
+impl<'maker, 'graph, 'points, T, F> PathMakerCall<'maker, 'graph, 'points, T, F>
 where
-    T: Clone + Hash + Ord + Borrow<U>,
+    T: Clone + Hash + Ord,
     T: Zero + One,
-    T: AddAssign + CheckedAdd + CheckedSub + AddAssign<&'penalty U>,
-    U: Ord,
+    T: AddAssign + CheckedAdd + CheckedSub + AddAssign<&'points T>,
     F: FnMut(&Vec2<T>) -> bool,
-    'graph: 'maker,
 {
     pub fn new(
         buf: &'maker mut PathMakerBuf<T>,
         graph: &'graph mut Graph<T>,
-        start: Vec2<T>,
-        goal: Vec2<T>,
-        penalty: &'penalty U,
+        start: &'points Vec2<T>,
+        goal: &'points Vec2<T>,
+        penalty: &'points T,
         valid_points: F,
     ) -> Self {
-        let this = Self {
-            buf,
-            graph,
-            start: start.clone(),
-            goal,
-            penalty,
-            valid_points,
-        };
-        this.buf.travelled.insert(start.clone(), Cost::new());
-        this.buf.points.insert(start, Cost::new());
+        let this = Self { buf, graph, start, goal, penalty, valid_points };
+        this.buf.travelled.insert(this.start.clone(), Cost::new());
+        this.buf.points.insert(this.start.clone(), Cost::new());
         this
     }
 
@@ -409,7 +417,7 @@ where
             let key = self.buf.points.keys().next()?.clone();
             let (current, cost) = self.buf.points.remove_entry(&key).unwrap();
 
-            if current == self.goal {
+            if current == *self.goal {
                 break Some(self.assemble_path(cost));
             }
 
@@ -419,11 +427,11 @@ where
 
     fn assemble_path(&mut self, _cost: Cost<T>) -> Vec<DirecVector<T>> {
         let mut steps = Vec::<DirecVector<_>>::new();
-        let mut last_vertex = &self.goal;
-        let mut current = &self.goal;
+        let mut last_vertex = self.goal;
+        let mut current = self.goal;
 
-        while current != &self.start {
-            let prev = self.buf.predecessors.get(&current).unwrap();
+        while current != self.start {
+            let prev = self.buf.predecessors.get(current).unwrap();
             let direction = prev.direction_to(current).unwrap();
 
             match steps.last_mut() {
@@ -432,7 +440,7 @@ where
                 },
                 _ => {
                     if last_vertex != current {
-                        self.graph.create_vertex(current.clone());
+                        self.graph.create_vertex((*current).clone());
                         self.graph.connect::<T>(
                             last_vertex.as_ref(),
                             current.as_ref(),
@@ -470,7 +478,7 @@ where
                     .buf
                     .predecessors
                     .get(&current)
-                    .map(|prev| prev.direction_to(&current) == Some(direction))
+                    .map(|prev| prev.direction_to(&current) != Some(direction))
                     .unwrap_or(false);
 
                 if is_turning {
@@ -492,7 +500,7 @@ where
                         .insert(neighbour.clone(), attempt.clone());
                     let heuristics = neighbour
                         .clone()
-                        .distance(self.goal.clone())
+                        .zip_with(self.goal.clone(), Distance::distance)
                         .fold(T::zero(), |coord_a, coord_b| coord_a + coord_b);
                     attempt.distance += heuristics;
                     self.buf.points.insert(neighbour, attempt);

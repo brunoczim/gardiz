@@ -1,7 +1,7 @@
 use super::Graph;
 use crate::{
     coord::Vec2,
-    direc::{DirecMap, Direction},
+    direc::{DirecMap, DirecVector, Direction},
 };
 
 #[test]
@@ -447,4 +447,32 @@ fn components() {
     );
 
     assert_eq!(components, &[component1, component2, component3]);
+}
+
+fn make_a_star_graph() -> Graph<u16> {
+    let mut graph = Graph::new();
+    graph.create_vertex(Vec2 { x: 0, y: 0 });
+    graph.create_vertex(Vec2 { x: 5, y: 2 });
+    graph.create_vertex(Vec2 { x: 5, y: 7 });
+    graph
+}
+
+#[test]
+fn a_star() {
+    let mut graph = make_a_star_graph();
+    let start = Vec2 { x: 0, y: 0 };
+    let goal = Vec2 { x: 5, y: 7 };
+    let penalty = 2;
+    let valid_points = |point: &Vec2<u16>| point.x < 10 && point.y < 10;
+
+    let directions =
+        graph.make_path(&start, &goal, &penalty, valid_points).unwrap();
+
+    assert_eq!(
+        directions,
+        vec![
+            DirecVector { direction: Direction::Down, magnitude: 7 },
+            DirecVector { direction: Direction::Right, magnitude: 5 },
+        ]
+    );
 }
