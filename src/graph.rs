@@ -12,9 +12,11 @@ use crate::{
     map::Map,
 };
 use num::{CheckedAdd, CheckedSub, One, Zero};
+use priority_queue::PriorityQueue;
 use std::{
     borrow::Borrow,
-    collections::{BTreeMap, BTreeSet, HashMap},
+    cmp,
+    collections::{BTreeSet, HashMap},
     hash::Hash,
     ops::AddAssign,
 };
@@ -322,7 +324,7 @@ where
 {
     predecessors: HashMap<Vec2<T>, Vec2<T>>,
     travelled: HashMap<Vec2<T>, Cost<T>>,
-    points: BTreeMap<Vec2<T>, Cost<T>>,
+    points: PriorityQueue<Vec2<T>, cmp::Reverse<Cost<T>>>,
 }
 
 impl<T> Default for PathMakerBuf<T>
@@ -344,7 +346,7 @@ where
         Self {
             predecessors: HashMap::new(),
             travelled: HashMap::new(),
-            points: BTreeMap::new(),
+            points: PriorityQueue::new(),
         }
     }
 
@@ -407,15 +409,13 @@ where
     ) -> Self {
         let this = Self { buf, graph, start, goal, penalty, valid_points };
         this.buf.travelled.insert(this.start.clone(), Cost::new());
-        this.buf.points.insert(this.start.clone(), Cost::new());
+        this.buf.points.push(this.start.clone(), cmp::Reverse(Cost::new()));
         this
     }
 
     fn run(&mut self) -> Option<Vec<DirecVector<T>>> {
         loop {
-            // TODO: replace by pop_first when stable.
-            let key = self.buf.points.keys().next()?.clone();
-            let (current, cost) = self.buf.points.remove_entry(&key).unwrap();
+            let (current, cmp::Reverse(cost)) = self.buf.points.pop().unwrap();
 
             if current == *self.goal {
                 break Some(self.assemble_path(cost));
@@ -503,7 +503,7 @@ where
                         .zip_with(self.goal.clone(), Distance::distance)
                         .fold(T::zero(), |coord_a, coord_b| coord_a + coord_b);
                     attempt.distance += heuristics;
-                    self.buf.points.insert(neighbour, attempt);
+                    self.buf.points.push(neighbour, cmp::Reverse(attempt));
                 }
             }
         }

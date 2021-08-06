@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 num = "^0.4"
+priority-queue = "^1.1"
