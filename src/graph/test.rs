@@ -454,6 +454,7 @@ fn make_a_star_graph() -> Graph<u16> {
     graph.create_vertex(Vec2 { x: 0, y: 0 });
     graph.create_vertex(Vec2 { x: 5, y: 2 });
     graph.create_vertex(Vec2 { x: 5, y: 7 });
+    graph.create_vertex(Vec2 { x: 2, y: 5 });
     graph
 }
 
@@ -475,6 +476,15 @@ fn a_star() {
             DirecVector { direction: Direction::Right, magnitude: 5 },
         ]
     );
+
+    let mut expected = make_a_star_graph();
+    expected.create_vertex(Vec2 { x: 0, y: 7 });
+    expected
+        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 0, y: 7 }.as_ref());
+    expected
+        .connect(Vec2 { x: 5, y: 7 }.as_ref(), Vec2 { x: 0, y: 7 }.as_ref());
+
+    assert_eq!(graph, expected);
 }
 
 #[test]
@@ -499,18 +509,38 @@ fn a_star_irregular() {
         directions,
         vec![
             // x = 0, y = 0
+            DirecVector { direction: Direction::Right, magnitude: 3 },
             // x = 3, y = 0
-            DirecVector { direction: Direction::Right, magnitude: 3 },
-            // x = 3, y = 5
             DirecVector { direction: Direction::Down, magnitude: 5 },
-            // x = 2, y = 5
+            // x = 3, y = 5
             DirecVector { direction: Direction::Left, magnitude: 1 },
-            // x = 2, y = 8
+            // x = 2, y = 5
             DirecVector { direction: Direction::Down, magnitude: 3 },
-            // x = 5, y = 8
+            // x = 2, y = 8
             DirecVector { direction: Direction::Right, magnitude: 3 },
-            // x = 5, y = 7
+            // x = 5, y = 8
             DirecVector { direction: Direction::Up, magnitude: 1 },
+            // x = 5, y = 7
         ]
     );
+
+    let mut expected = make_a_star_graph();
+    expected.create_vertex(Vec2 { x: 3, y: 0 });
+    expected.create_vertex(Vec2 { x: 3, y: 5 });
+    expected.create_vertex(Vec2 { x: 2, y: 8 });
+    expected.create_vertex(Vec2 { x: 5, y: 8 });
+    expected
+        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 3, y: 0 }.as_ref());
+    expected
+        .connect(Vec2 { x: 3, y: 5 }.as_ref(), Vec2 { x: 3, y: 0 }.as_ref());
+    expected
+        .connect(Vec2 { x: 3, y: 5 }.as_ref(), Vec2 { x: 2, y: 5 }.as_ref());
+    expected
+        .connect(Vec2 { x: 2, y: 8 }.as_ref(), Vec2 { x: 2, y: 5 }.as_ref());
+    expected
+        .connect(Vec2 { x: 2, y: 8 }.as_ref(), Vec2 { x: 5, y: 8 }.as_ref());
+    expected
+        .connect(Vec2 { x: 5, y: 7 }.as_ref(), Vec2 { x: 5, y: 8 }.as_ref());
+
+    assert_eq!(graph, expected);
 }

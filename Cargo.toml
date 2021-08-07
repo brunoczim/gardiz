@@ -1,10 +1,14 @@
 [package]
 name = "gardiz"
 version = "0.1.0"
-authors = ["Bruno Zimmermann <brunoczim@gmail.com>"]
+authors = ["brunoczim <brunoczim@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "A library for integer geometry on 2D planes, focused on games"
+readme = "README.md"
+repository = "https://github.com/brunoczim/gardiz"
+license-file = "LICENSE"
+keywords = ["plane", "graph", "geometry", "integer", "2D"]
+categories = ["game-development", "mathematics", "data-structures"]
 
 [dependencies]
 num = "^0.4"
