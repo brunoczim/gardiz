@@ -30,13 +30,16 @@
 //! # fn main() {
 //! // `i64` is the type of the coordinate of the points.
 //! let mut graph = Graph::<i64>::new();
+//! // Initial and final points.
 //! let start = Vec2 { x: -3, y: -3 };
 //! let goal = Vec2 { x: 2, y: 4 };
 //! graph.create_vertex(start);
 //! graph.create_vertex(goal);
 //!
+//! // Penalty whenever the path takes a turn.
 //! let penalty = 2;
 //!
+//! // Valid points to be used in the path.
 //! let mut valid_points = HashSet::new();
 //! for x in -3 .. 1 {
 //!     for y in -3 .. 0 {
@@ -69,8 +72,10 @@
 //!     }
 //! }
 //!
+//! // Cloning the graph before making the path (which will modify it).
 //! let mut expected = graph.clone();
 //!
+//! // Runs A*
 //! let directions = graph.make_path(
 //!     &start,
 //!     &goal,
@@ -78,6 +83,7 @@
 //!     |point| valid_points.contains(&point)
 //! );
 //!
+//! // Checks whether the computed directions are correct.
 //! assert_eq!(
 //!     directions,
 //!     Some(vec![
@@ -97,11 +103,14 @@
 //!     ])
 //! );
 //!
+//! // Insert the vertices created when making the path.
 //! expected.create_vertex(Vec2 { x: 0, y: -3 });
 //! expected.create_vertex(Vec2 { x: 0, y: 2 });
 //! expected.create_vertex(Vec2 { x: -1, y: 2 });
 //! expected.create_vertex(Vec2 { x: -1, y: 5 });
 //! expected.create_vertex(Vec2 { x: 2, y: 5 });
+//!
+//! // Connect the vertices in the path.
 //! expected
 //!     .connect(Vec2 { x: -3, y: -3 }.as_ref(), Vec2 { x: 0, y: -3 }.as_ref());
 //! expected
@@ -114,6 +123,9 @@
 //!     .connect(Vec2 { x: -1, y: 5 }.as_ref(), Vec2 { x: 2, y: 5 }.as_ref());
 //! expected
 //!     .connect(Vec2 { x: 2, y: 4 }.as_ref(), Vec2 { x: 2, y: 5 }.as_ref());
+//!
+//! // Test if the graph produced by `make_path` is the expected one we built.
+//! assert_eq!(graph, expected);
 //! # }
 //! ```
 
