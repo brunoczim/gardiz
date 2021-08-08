@@ -16,8 +16,8 @@ impl Axis {
     pub const ALL: [Axis; 2] = [Axis::Y, Axis::X];
 
     /// Iterator over all axes.
-    pub fn iter() -> AxisIter {
-        AxisIter { inner: Self::ALL.iter() }
+    pub fn iter() -> Iter {
+        Iter { inner: Self::ALL.iter() }
     }
 }
 
@@ -43,11 +43,11 @@ impl Not for Axis {
 
 /// Iterator over all axes. See [`Axis::iter`].
 #[derive(Debug, Clone)]
-pub struct AxisIter {
+pub struct Iter {
     inner: slice::Iter<'static, Axis>,
 }
 
-impl Iterator for AxisIter {
+impl Iterator for Iter {
     type Item = Axis;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -59,10 +59,10 @@ impl Iterator for AxisIter {
     }
 }
 
-impl DoubleEndedIterator for AxisIter {
+impl DoubleEndedIterator for Iter {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.inner.next_back().copied()
     }
 }
 
-impl ExactSizeIterator for AxisIter {}
+impl ExactSizeIterator for Iter {}

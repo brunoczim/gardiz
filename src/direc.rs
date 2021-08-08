@@ -25,8 +25,8 @@ impl Direction {
         [Direction::Up, Direction::Down, Direction::Left, Direction::Right];
 
     /// Iterator over all possible directions.
-    pub fn iter() -> DirectionIter {
-        DirectionIter { inner: Self::ALL.iter() }
+    pub fn iter() -> Iter {
+        Iter { inner: Self::ALL.iter() }
     }
 
     /// Creates a direction from the given axis in the positive direction (i.e.
@@ -91,11 +91,11 @@ impl Not for Direction {
 
 /// Iterator over all "straight" 2D directions. See [`Direction::iter`].
 #[derive(Debug, Clone)]
-pub struct DirectionIter {
+pub struct Iter {
     inner: slice::Iter<'static, Direction>,
 }
 
-impl Iterator for DirectionIter {
+impl Iterator for Iter {
     type Item = Direction;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -107,13 +107,13 @@ impl Iterator for DirectionIter {
     }
 }
 
-impl DoubleEndedIterator for DirectionIter {
+impl DoubleEndedIterator for Iter {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.inner.next_back().copied()
     }
 }
 
-impl ExactSizeIterator for DirectionIter {}
+impl ExactSizeIterator for Iter {}
 
 /// A vector written as a magnitude and a direction.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

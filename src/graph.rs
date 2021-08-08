@@ -4,7 +4,7 @@
 mod test;
 
 use crate::{
-    axis::{Axis, AxisIter},
+    axis::{self, Axis},
     bits::Distance,
     coord::Vec2,
     direc::{DirecMap, DirecVector, Direction},
@@ -601,7 +601,7 @@ where
 {
     graph: &'graph Graph<T>,
     vertices_edges: Peekable<Rows<'graph, T, VertexEdges>>,
-    axes: AxisIter,
+    axes: axis::Iter,
 }
 
 impl<'graph, T> Iterator for Connections<'graph, T>
