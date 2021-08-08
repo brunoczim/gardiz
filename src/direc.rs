@@ -1,7 +1,10 @@
 //! Utilities related to directions in the plane.
 
 use crate::axis::Axis;
-use std::ops::{Index, IndexMut, Not};
+use std::{
+    ops::{Index, IndexMut, Not},
+    slice,
+};
 
 /// Basic direction in a plane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -22,8 +25,26 @@ impl Direction {
         [Direction::Up, Direction::Down, Direction::Left, Direction::Right];
 
     /// Iterator over all possible directions.
-    pub fn iter() -> impl DoubleEndedIterator<Item = Direction> {
-        Self::ALL.iter().copied()
+    pub fn iter() -> DirectionIter {
+        DirectionIter { inner: Self::ALL.iter() }
+    }
+
+    /// Creates a direction from the given axis in the positive direction (i.e.
+    /// `X -> Right` and `Y -> Down`).
+    pub fn from_axis_pos(axis: Axis) -> Self {
+        match axis {
+            Axis::X => Direction::Right,
+            Axis::Y => Direction::Down,
+        }
+    }
+
+    /// Creates a direction from the given axis in the negative direction (i.e.
+    /// `X -> Left` and `Y -> Up`).
+    pub fn from_axis_neg(axis: Axis) -> Self {
+        match axis {
+            Axis::X => Direction::Left,
+            Axis::Y => Direction::Up,
+        }
     }
 
     /// Axis on which the direciton varies.
@@ -67,6 +88,32 @@ impl Not for Direction {
         }
     }
 }
+
+/// Iterator over all "straight" 2D directions. See [`Direction::iter`].
+#[derive(Debug, Clone)]
+pub struct DirectionIter {
+    inner: slice::Iter<'static, Direction>,
+}
+
+impl Iterator for DirectionIter {
+    type Item = Direction;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().copied()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl DoubleEndedIterator for DirectionIter {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().copied()
+    }
+}
+
+impl ExactSizeIterator for DirectionIter {}
 
 /// A vector written as a magnitude and a direction.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

@@ -14,7 +14,7 @@ use std::{
 
 /// Map of coordinates in a plane to arbitrary data. Optimized given the fact
 /// the coordinates/vectors are in the plane. Keys of the map are `Vec2<K>`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Map<K, V>
 where
     K: Ord,
@@ -295,6 +295,23 @@ where
     }
 }
 
+impl<K, V> PartialEq for Map<K, V>
+where
+    K: Ord,
+    V: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.neighbours.x == other.neighbours.x
+    }
+}
+
+impl<K, V> Eq for Map<K, V>
+where
+    K: Ord,
+    V: Eq,
+{
+}
+
 impl<K, V> Extend<(Vec2<K>, V)> for Map<K, V>
 where
     K: Ord + Clone,
@@ -327,7 +344,7 @@ where
 
 /// Iterator over the neighbours of a point in a map. See [`Map::neighbours`]
 /// and [`Map::neighbours_incl`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Neighbours<'map, K, V>
 where
     K: Ord,
@@ -391,7 +408,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct NeighboursInner<'map, K, V>
 where
     K: Ord,
@@ -459,7 +476,7 @@ where
 }
 
 /// Iterator over entries of a map in the direction of rows. See [`Map::rows`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rows<'map, K, V>
 where
     K: Ord,
@@ -531,7 +548,7 @@ where
 
 /// Iterator over entries of a map in the direction of columns. See
 /// [`Map::columns`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Columns<'map, K, V>
 where
     K: Ord,

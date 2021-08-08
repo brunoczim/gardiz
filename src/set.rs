@@ -165,7 +165,7 @@ where
 
 /// Iterator over the neighbours of a given point in a given direction (in a
 /// set). See [`Set::neighbours`] and [`Set::neighbours_incl`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Neighbours<'set, T>
 where
     T: Ord,
@@ -195,7 +195,7 @@ where
 
 /// Iterator over the points of a set in the direction of rows (in a
 /// set). See [`Set::rows`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rows<'set, T>
 where
     T: Ord,
@@ -225,7 +225,7 @@ where
 
 /// Iterator over the points of a set in the direction of columns (in a
 /// set). See [`Set::columns`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Columns<'set, T>
 where
     T: Ord,

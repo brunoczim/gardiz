@@ -1,6 +1,6 @@
 //! Utilites related to the axes of a plane.
 
-use std::{fmt, ops::Not};
+use std::{fmt, ops::Not, slice};
 
 /// The axes of a plane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -16,8 +16,8 @@ impl Axis {
     pub const ALL: [Axis; 2] = [Axis::Y, Axis::X];
 
     /// Iterator over all axes.
-    pub fn iter() -> impl DoubleEndedIterator<Item = Axis> {
-        Self::ALL.iter().copied()
+    pub fn iter() -> AxisIter {
+        AxisIter { inner: Self::ALL.iter() }
     }
 }
 
@@ -40,3 +40,29 @@ impl Not for Axis {
         }
     }
 }
+
+/// Iterator over all axes. See [`Axis::iter`].
+#[derive(Debug, Clone)]
+pub struct AxisIter {
+    inner: slice::Iter<'static, Axis>,
+}
+
+impl Iterator for AxisIter {
+    type Item = Axis;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().copied()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
+impl DoubleEndedIterator for AxisIter {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.inner.next_back().copied()
+    }
+}
+
+impl ExactSizeIterator for AxisIter {}

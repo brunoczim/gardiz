@@ -265,6 +265,90 @@ fn disconnect() {
 }
 
 #[test]
+fn extend_vertices() {
+    let mut graph = make_graph();
+    graph.extend_vertices(vec![
+        Vec2 { x: -9, y: 1395 },
+        Vec2 { x: 1, y: 9 },
+        Vec2 { x: 8, y: 9 },
+        Vec2 { x: 8, y: 7 },
+        Vec2 { x: 8, y: 5 },
+    ]);
+
+    assert!(graph.vertices_edges().contains(Vec2 { x: -9, y: 1395 }.as_ref()));
+    assert!(graph.vertices_edges().contains(Vec2 { x: 1, y: 9 }.as_ref()));
+    assert!(graph.vertices_edges().contains(Vec2 { x: 8, y: 5 }.as_ref()));
+    assert!(!graph.vertices_edges().contains(Vec2 { x: -8123, y: 0 }.as_ref()));
+}
+
+#[test]
+fn extend_edges() {
+    let mut graph = make_graph();
+    graph.create_vertex(Vec2 { x: -9, y: 1395 });
+    graph.create_vertex(Vec2 { x: 1, y: 9 });
+    graph.create_vertex(Vec2 { x: 8, y: 9 });
+    graph.create_vertex(Vec2 { x: 8, y: 7 });
+    graph.create_vertex(Vec2 { x: 8, y: 5 });
+
+    graph.extend_edges(vec![
+        (Vec2 { x: 1, y: 9 }.as_ref(), Vec2 { x: 8, y: 9 }.as_ref()),
+        (Vec2 { x: 8, y: 7 }.as_ref(), Vec2 { x: 8, y: 9 }.as_ref()),
+        (Vec2 { x: -9, y: 1399 }.as_ref(), Vec2 { x: -9, y: 1400 }.as_ref()),
+    ]);
+
+    assert!(graph.are_connected(
+        Vec2 { x: 1, y: 9 }.as_ref(),
+        Vec2 { x: 8, y: 9 }.as_ref()
+    ));
+
+    assert!(graph.are_connected(
+        Vec2 { x: 8, y: 9 }.as_ref(),
+        Vec2 { x: 8, y: 7 }.as_ref()
+    ));
+
+    assert!(graph.are_connected(
+        Vec2 { x: -9, y: 1399 }.as_ref(),
+        Vec2 { x: -9, y: 1400 }.as_ref()
+    ));
+
+    assert!(!graph.are_connected(
+        Vec2 { x: 8, y: 7 }.as_ref(),
+        Vec2 { x: 7, y: 5 }.as_ref()
+    ));
+}
+
+#[test]
+fn from_verts_and_edges() {
+    let graph = Graph::<u128>::from_verts_and_edges(
+        vec![
+            Vec2 { x: 5, y: 7 },
+            Vec2 { x: 8, y: 6 },
+            Vec2 { x: 0, y: 1 },
+            Vec2 { x: 5, y: 6 },
+        ],
+        vec![
+            (Vec2 { x: 5, y: 6 }.as_ref(), Vec2 { x: 8, y: 6 }.as_ref()),
+            (Vec2 { x: 5, y: 6 }.as_ref(), Vec2 { x: 5, y: 7 }.as_ref()),
+        ],
+    );
+
+    assert!(graph.are_connected(
+        Vec2 { x: 5, y: 6 }.as_ref(),
+        Vec2 { x: 8, y: 6 }.as_ref()
+    ));
+
+    assert!(graph.are_connected(
+        Vec2 { x: 5, y: 6 }.as_ref(),
+        Vec2 { x: 5, y: 7 }.as_ref()
+    ));
+
+    assert!(!graph.are_connected(
+        Vec2 { x: 5, y: 6 }.as_ref(),
+        Vec2 { x: 0, y: 1 }.as_ref()
+    ));
+}
+
+#[test]
 fn remove_vertex() {
     let mut graph = make_graph();
     graph.remove_vertex(Vec2 { x: 3, y: -3 }.as_ref());
@@ -325,7 +409,8 @@ fn remove_vertex() {
         Vec2 { x: 0, y: -8 }.as_ref(),
     ));
 
-    let edges = graph.edges().get(Vec2 { x: 1020, y: -3 }.as_ref()).unwrap();
+    let edges =
+        graph.vertices_edges().get(Vec2 { x: 1020, y: -3 }.as_ref()).unwrap();
     assert!(!edges[Direction::Up]);
 }
 
@@ -390,7 +475,8 @@ fn remove_with_edges() {
         Vec2 { x: 0, y: -8 }.as_ref(),
     ));
 
-    let edges = graph.edges().get(Vec2 { x: 1020, y: -3 }.as_ref()).unwrap();
+    let edges =
+        graph.vertices_edges().get(Vec2 { x: 1020, y: -3 }.as_ref()).unwrap();
     assert!(!edges[Direction::Up]);
 }
 

@@ -1,15 +1,14 @@
 //! A graph of points in a plane.
 
-// TODO?: Make connections not overlap
-
 #[cfg(test)]
 mod test;
 
 use crate::{
+    axis::{Axis, AxisIter},
     bits::Distance,
     coord::Vec2,
     direc::{DirecMap, DirecVector, Direction},
-    map::Map,
+    map::{Map, Rows},
 };
 use num::{CheckedAdd, CheckedSub, One, Zero};
 use priority_queue::PriorityQueue;
@@ -18,20 +17,25 @@ use std::{
     cmp,
     collections::{BTreeSet, HashMap},
     hash::Hash,
+    iter::Peekable,
     ops::AddAssign,
 };
 
-/// The edges of a vertex. More specifically, at which direction the vertex is
-/// connected?
+/// The vertices_edges of a vertex. More specifically, at which direction the
+/// vertex is connected?
 pub type VertexEdges = DirecMap<bool>;
 
-/// A graph of points in a plane.
+/// A graph of points in a plane. Two points can only be connected once with
+/// each other or not connected at all (with each other), no pair of points can
+/// be connected with each other more than once. Also, graphs might not be
+/// necessarily planar, although they can (this means two edges can overlap).
+/// Points can only be connected in "straight" 2D directions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Graph<T>
 where
     T: Ord,
 {
-    edges: Map<T, VertexEdges>,
+    vertices_edges: Map<T, VertexEdges>,
 }
 
 impl<T> Default for Graph<T>
@@ -49,26 +53,70 @@ where
 {
     /// Creates a new empty graph.
     pub fn new() -> Self {
-        Self { edges: Map::new() }
+        Self { vertices_edges: Map::new() }
     }
 
-    /// Creates the graph from a list of vertices (and no edges!).
+    /// Creates the graph from a list of vertices (and no vertices_edges!).
     pub fn from_vertices<I>(vertices: I) -> Self
     where
         I: IntoIterator<Item = Vec2<T>>,
         T: Clone,
     {
         Self {
-            edges: vertices
+            vertices_edges: vertices
                 .into_iter()
                 .map(|vertex| (vertex, DirecMap::from_direcs(|_| false)))
                 .collect(),
         }
     }
 
+    /// Creates the graph from a list of vertices (and list of vertices-pair
+    /// connected in vertices_edges).
+    pub fn from_verts_and_edges<'vertex, U, I, J>(
+        vertices: I,
+        vertices_edges: J,
+    ) -> Self
+    where
+        I: IntoIterator<Item = Vec2<T>>,
+        T: Borrow<U> + Clone,
+        U: 'vertex + Ord,
+        J: IntoIterator<Item = (Vec2<&'vertex U>, Vec2<&'vertex U>)>,
+    {
+        let mut this = Self::from_vertices(vertices);
+        this.extend_edges(vertices_edges);
+        this
+    }
+
+    /// Extend the set of vertices from a given list of vertices, creating
+    /// vertices when not existing already. The created vertices have no edges.
+    pub fn extend_vertices<I>(&mut self, vertices: I)
+    where
+        I: IntoIterator<Item = Vec2<T>>,
+        T: Clone,
+    {
+        self.vertices_edges.extend(
+            vertices
+                .into_iter()
+                .map(|vertex| (vertex, DirecMap::from_direcs(|_| false))),
+        );
+    }
+
+    /// Extends the graph edge list from a list of vertices-pair connected in
+    /// vertices_edges.
+    pub fn extend_edges<'vertex, U, I>(&mut self, vertices_edges: I)
+    where
+        U: 'vertex + Ord,
+        T: Borrow<U>,
+        I: IntoIterator<Item = (Vec2<&'vertex U>, Vec2<&'vertex U>)>,
+    {
+        for (vertex_a, vertex_b) in vertices_edges {
+            self.connect(vertex_a, vertex_b);
+        }
+    }
+
     /// Returns the underlying map of vertices to edge flags.
-    pub fn edges(&self) -> &Map<T, VertexEdges> {
-        &self.edges
+    pub fn vertices_edges(&self) -> &Map<T, VertexEdges> {
+        &self.vertices_edges
     }
 
     /// Gets the edge flags of the given vertex, the vertex is in the graph in
@@ -78,7 +126,7 @@ where
         U: Ord,
         T: Borrow<U>,
     {
-        self.edges.get(vertex).copied()
+        self.vertices_edges.get(vertex).copied()
     }
 
     /// Tests if the given two vertices are connected.
@@ -95,13 +143,14 @@ where
             Some(direction) => direction,
             None => return false,
         };
-        let edges = match self.vertex_edges(vertex_a) {
-            Some(edges) => edges,
+        let vertices_edges = match self.vertex_edges(vertex_a) {
+            Some(vertices_edges) => vertices_edges,
             None => return false,
         };
 
-        edges[direction] && {
-            let neighbour = self.edges.first_neighbour(vertex_a, direction);
+        vertices_edges[direction] && {
+            let neighbour =
+                self.vertices_edges.first_neighbour(vertex_a, direction);
             neighbour.map(Vec2::into_borrow) == Some(vertex_b)
         }
     }
@@ -118,33 +167,34 @@ where
         U: Ord,
     {
         if self.vertex_edges(vertex)?[direction] {
-            self.edges.first_neighbour(vertex, direction)
+            self.vertices_edges.first_neighbour(vertex, direction)
         } else {
             None
         }
     }
 
-    /// Creates a new vertex in the graph (without creating edges!). Returns if
-    /// the vertex was really created (i.e. vertex not already there).
+    /// Creates a new vertex in the graph (without creating vertices_edges!).
+    /// Returns if the vertex was really created (i.e. vertex not already
+    /// there).
     pub fn create_vertex(&mut self, vertex: Vec2<T>) -> bool
     where
         T: Clone,
     {
-        let mut edges = DirecMap::from_direcs(|_| false);
+        let mut vertices_edges = DirecMap::from_direcs(|_| false);
 
         for direction in Direction::iter() {
             if let Some(neighbour) =
-                self.edges.first_neighbour(vertex.as_ref(), direction)
+                self.vertices_edges.first_neighbour(vertex.as_ref(), direction)
             {
                 let neighbour_edges =
                     self.vertex_edges(neighbour).expect("Inconsistent graph");
                 if neighbour_edges[!direction] {
-                    edges[direction] = true;
+                    vertices_edges[direction] = true;
                 }
             }
         }
 
-        self.edges.create(vertex.clone(), edges)
+        self.vertices_edges.create(vertex.clone(), vertices_edges)
     }
 
     /// Connects the given two vertices and returns if they were really
@@ -158,7 +208,7 @@ where
             vertex_a.direction_to(&vertex_b).expect("no straight direction");
 
         let first_neighbour = self
-            .edges
+            .vertices_edges
             .first_neighbour(vertex_a, direction)
             .map(|neighbour| neighbour.map(Borrow::borrow));
 
@@ -166,16 +216,17 @@ where
             panic!("Vertices are not neighbours")
         }
 
-        let mut edges = self.vertex_edges(vertex_a).expect("Invalid vertex");
-        if edges[direction] {
+        let mut vertices_edges =
+            self.vertex_edges(vertex_a).expect("Invalid vertex");
+        if vertices_edges[direction] {
             false
         } else {
-            edges[direction] = true;
-            let _ = self.edges.update(vertex_a, edges);
-            let mut edges =
+            vertices_edges[direction] = true;
+            let _ = self.vertices_edges.update(vertex_a, vertices_edges);
+            let mut vertices_edges =
                 self.vertex_edges(vertex_b).expect("Invalid vertex");
-            edges[!direction] = true;
-            let _ = self.edges.update(vertex_b, edges);
+            vertices_edges[!direction] = true;
+            let _ = self.vertices_edges.update(vertex_b, vertices_edges);
             true
         }
     }
@@ -195,7 +246,7 @@ where
             vertex_a.direction_to(&vertex_b).expect("no straight direction");
 
         let first_neighbour = self
-            .edges
+            .vertices_edges
             .first_neighbour(vertex_a, direction)
             .map(|neighbour| neighbour.map(Borrow::borrow));
 
@@ -203,90 +254,105 @@ where
             panic!("Vertices are not neighbours")
         }
 
-        let mut edges = self.vertex_edges(vertex_a).expect("Invalid vertex");
-        if edges[direction] {
-            edges[direction] = false;
-            let _ = self.edges.update(vertex_a, edges);
-            let mut edges =
+        let mut vertices_edges =
+            self.vertex_edges(vertex_a).expect("Invalid vertex");
+        if vertices_edges[direction] {
+            vertices_edges[direction] = false;
+            let _ = self.vertices_edges.update(vertex_a, vertices_edges);
+            let mut vertices_edges =
                 self.vertex_edges(vertex_b).expect("Invalid vertex");
-            edges[!direction] = false;
-            let _ = self.edges.update(vertex_b, edges);
+            vertices_edges[!direction] = false;
+            let _ = self.vertices_edges.update(vertex_b, vertices_edges);
             true
         } else {
             false
         }
     }
 
-    /// Removes a vertex but attempts to connect edges between its neighbours,
-    /// if the target vertex had edges in both directions. Returns if the vertex
-    /// was really removed (i.e. it was in the graph).
+    /// Iterator over the connections of this graph: pairs of vertices in an
+    /// edge. Note that two vertices cannot be connected twice.
+    pub fn connections(&self) -> Connections<T> {
+        Connections {
+            graph: self,
+            vertices_edges: self.vertices_edges.rows().peekable(),
+            axes: Axis::iter(),
+        }
+    }
+
+    /// Removes a vertex but attempts to connect vertices_edges between its
+    /// neighbours, if the target vertex had vertices_edges in both
+    /// directions. Returns if the vertex was really removed (i.e. it was in
+    /// the graph).
     pub fn remove_vertex<U>(&mut self, vertex: Vec2<&U>) -> bool
     where
         U: Ord,
         T: Borrow<U> + Clone,
     {
-        let edges = match self.edges.get(vertex).copied() {
-            Some(edges) => edges,
+        let vertices_edges = match self.vertices_edges.get(vertex).copied() {
+            Some(vertices_edges) => vertices_edges,
             None => return false,
         };
 
         for direction in Direction::iter() {
-            if let Some((neighbour, neighbour_edges)) =
-                self.edges.first_neighbour_data(vertex, direction).clone()
+            if let Some((neighbour, neighbour_edges)) = self
+                .vertices_edges
+                .first_neighbour_data(vertex, direction)
+                .clone()
             {
                 let neighbour = neighbour.cloned();
                 let mut neighbour_edges = *neighbour_edges;
-                if !edges[!direction] {
+                if !vertices_edges[!direction] {
                     neighbour_edges[!direction] = false;
                     let _ = self
-                        .edges
+                        .vertices_edges
                         .update::<T>(neighbour.as_ref(), neighbour_edges);
                 }
             }
         }
 
-        self.edges.remove(vertex);
+        self.vertices_edges.remove(vertex);
         true
     }
 
-    /// Removes a vertex and all its edges. Returns if the vertex was really
-    /// removed (i.e. it was in the graph).
+    /// Removes a vertex and all its vertices_edges. Returns if the vertex was
+    /// really removed (i.e. it was in the graph).
     pub fn remove_with_edges<U>(&mut self, vertex: Vec2<&U>) -> bool
     where
         U: Ord,
         T: Borrow<U> + Clone + std::fmt::Debug,
     {
-        let edges = match self.edges.get(vertex).copied() {
-            Some(edges) => edges,
+        let vertices_edges = match self.vertices_edges.get(vertex).copied() {
+            Some(vertices_edges) => vertices_edges,
             None => return false,
         };
 
         for direction in Direction::iter() {
-            if let Some((neighbour, neighbour_edges)) =
-                self.edges.first_neighbour_data(vertex, direction).clone()
+            if let Some((neighbour, neighbour_edges)) = self
+                .vertices_edges
+                .first_neighbour_data(vertex, direction)
+                .clone()
             {
                 let neighbour = neighbour.cloned();
                 let mut neighbour_edges = *neighbour_edges;
-                if edges[direction] {
+                if vertices_edges[direction] {
                     neighbour_edges[!direction] = false;
                     let _ = self
-                        .edges
+                        .vertices_edges
                         .update::<T>(neighbour.as_ref(), neighbour_edges);
                 }
             }
         }
 
-        self.edges.remove(vertex);
+        self.vertices_edges.remove(vertex);
         true
     }
 
     /// Creates iterator over connected components of the graph. E.g. each
-    /// "island" in the graph makes a new subgraph (and an item of the
-    /// iterator).
+    /// "island" in the graph makes a new subgraph yielded by the iterator.
     pub fn components(&self) -> Components<T> {
         Components {
             graph: self,
-            unvisited: self.edges.rows().map(|(key, _)| key).collect(),
+            unvisited: self.vertices_edges.rows().map(|(key, _)| key).collect(),
         }
     }
 
@@ -342,6 +408,7 @@ where
     T: Clone + Hash + Ord,
     T: Zero + One + AddAssign + CheckedAdd + CheckedSub,
 {
+    /// Creates a new empty path maker buffer.
     pub fn new() -> Self {
         Self {
             predecessors: HashMap::new(),
@@ -399,7 +466,7 @@ where
     T: AddAssign + CheckedAdd + CheckedSub + AddAssign<&'points T>,
     F: FnMut(&Vec2<T>) -> bool,
 {
-    pub fn new(
+    fn new(
         buf: &'maker mut PathMakerBuf<T>,
         graph: &'graph mut Graph<T>,
         start: &'points Vec2<T>,
@@ -451,7 +518,7 @@ where
                 },
             }
 
-            if self.graph.edges().contains::<T>(prev.as_ref()) {
+            if self.graph.vertices_edges().contains::<T>(prev.as_ref()) {
                 self.graph.connect::<T>(last_vertex.as_ref(), prev.as_ref());
                 last_vertex = prev;
             }
@@ -522,6 +589,44 @@ impl<T> Cost<T> {
         T: Zero,
     {
         Self { distance: T::zero(), turns: T::zero() }
+    }
+}
+
+/// Iterator over the connections of this graph pairs of vertices in an edge.
+/// See [`Graph::connections`].
+#[derive(Debug, Clone)]
+pub struct Connections<'graph, T>
+where
+    T: Ord,
+{
+    graph: &'graph Graph<T>,
+    vertices_edges: Peekable<Rows<'graph, T, VertexEdges>>,
+    axes: AxisIter,
+}
+
+impl<'graph, T> Iterator for Connections<'graph, T>
+where
+    T: Ord,
+{
+    type Item = (Vec2<&'graph T>, Vec2<&'graph T>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let (vertex, _) = self.vertices_edges.peek().copied()?;
+            match self.axes.next().map(Direction::from_axis_pos) {
+                Some(direction) => {
+                    if let Some(neighbour) =
+                        self.graph.connected_at(vertex, direction)
+                    {
+                        break Some((vertex, neighbour));
+                    }
+                },
+                None => {
+                    self.vertices_edges.next()?;
+                    self.axes = Axis::iter();
+                },
+            }
+        }
     }
 }
 

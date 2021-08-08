@@ -129,6 +129,8 @@
 //! # }
 //! ```
 
+#![warn(missing_docs, missing_debug_implementations)]
+
 pub mod bits;
 pub mod axis;
 pub mod direc;

@@ -410,3 +410,31 @@ fn columns_empty() {
         .collect::<Vec<_>>();
     assert_eq!(columns, &[]);
 }
+
+#[test]
+fn equals() {
+    let mut map = Map::<i16, &str>::new();
+    map.insert(Vec2 { x: 0, y: 3 }, "ahuacatl");
+    map.insert(Vec2 { x: 5, y: 3 }, "chocolatl");
+    map.insert(Vec2 { x: -1, y: -3 }, "axolotl");
+    map.insert(Vec2 { x: -1, y: -2 }, "tomatl");
+
+    let mut copied = Map::<i16, &str>::new();
+    copied.insert(Vec2 { x: 0, y: 3 }, "ahuacatl");
+    copied.insert(Vec2 { x: 5, y: 3 }, "chocolatl");
+    copied.insert(Vec2 { x: -1, y: -3 }, "axolotl");
+
+    assert_ne!(map, copied);
+
+    copied.insert(Vec2 { x: -1, y: -2 }, "tomatl");
+    assert_eq!(map, copied);
+
+    let _ = copied.update(Vec2 { x: -1, y: -2 }.as_ref(), "ocelotl");
+    assert_ne!(map, copied);
+
+    let _ = copied.update(Vec2 { x: -1, y: -2 }.as_ref(), "tomatl");
+    assert_eq!(map, copied);
+
+    copied.insert(Vec2 { x: -2, y: -2 }, "koyotl");
+    assert_ne!(map, copied);
+}
