@@ -678,7 +678,7 @@
 <span class="kw">mod</span> <span class="ident">test</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
-    <span class="ident">axis</span>::{<span class="ident">Axis</span>, <span class="ident">AxisIter</span>},
+    <span class="ident">axis</span>::{<span class="self">self</span>, <span class="ident">Axis</span>},
     <span class="ident">bits::Distance</span>,
     <span class="ident">coord::Vec2</span>,
     <span class="ident">direc</span>::{<span class="ident">DirecMap</span>, <span class="ident">DirecVector</span>, <span class="ident">Direction</span>},
@@ -1275,7 +1275,7 @@
 {
     <span class="ident">graph</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;graph</span> <span class="ident">Graph</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">vertices_edges</span>: <span class="ident">Peekable</span><span class="op">&lt;</span><span class="ident">Rows</span><span class="op">&lt;</span><span class="lifetime">&#39;graph</span>, <span class="ident">T</span>, <span class="ident">VertexEdges</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">axes</span>: <span class="ident">AxisIter</span>,
+    <span class="ident">axes</span>: <span class="ident">axis::Iter</span>,
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;graph</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Connections</span><span class="op">&lt;</span><span class="lifetime">&#39;graph</span>, <span class="ident">T</span><span class="op">&gt;</span>

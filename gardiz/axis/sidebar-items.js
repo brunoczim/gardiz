@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Axis","The axes of a plane."]],"struct":[["AxisIter","Iterator over all axes. See [`Axis::iter`]."]]});
+initSidebarItems({"enum":[["Axis","The axes of a plane."]],"struct":[["Iter","Iterator over all axes. See [`Axis::iter`]."]]});
