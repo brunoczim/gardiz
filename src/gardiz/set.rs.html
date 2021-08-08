@@ -422,7 +422,7 @@
 
 <span class="doccomment">/// Iterator over the neighbours of a given point in a given direction (in a</span>
 <span class="doccomment">/// set). See [`Set::neighbours`] and [`Set::neighbours_incl`].</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Neighbours</span><span class="op">&lt;</span><span class="lifetime">&#39;set</span>, <span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Ord</span>,
@@ -452,7 +452,7 @@
 
 <span class="doccomment">/// Iterator over the points of a set in the direction of rows (in a</span>
 <span class="doccomment">/// set). See [`Set::rows`].</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Rows</span><span class="op">&lt;</span><span class="lifetime">&#39;set</span>, <span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Ord</span>,
@@ -482,7 +482,7 @@
 
 <span class="doccomment">/// Iterator over the points of a set in the direction of columns (in a</span>
 <span class="doccomment">/// set). See [`Set::columns`].</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Columns</span><span class="op">&lt;</span><span class="lifetime">&#39;set</span>, <span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Ord</span>,

@@ -130,11 +130,61 @@
 <span id="128">128</span>
 <span id="129">129</span>
 <span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
 </pre><pre class="rust">
 <span class="doccomment">//! Utilities related to directions in the plane.</span>
 
 <span class="kw">use</span> <span class="kw">crate</span><span class="ident">::axis::Axis</span>;
-<span class="kw">use</span> <span class="ident">std::ops</span>::{<span class="ident">Index</span>, <span class="ident">IndexMut</span>, <span class="ident">Not</span>};
+<span class="kw">use</span> <span class="ident">std</span>::{
+    <span class="ident">ops</span>::{<span class="ident">Index</span>, <span class="ident">IndexMut</span>, <span class="ident">Not</span>},
+    <span class="ident">slice</span>,
+};
 
 <span class="doccomment">/// Basic direction in a plane.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>)]</span>
@@ -155,8 +205,26 @@
         [<span class="ident">Direction::Up</span>, <span class="ident">Direction::Down</span>, <span class="ident">Direction::Left</span>, <span class="ident">Direction::Right</span>];
 
     <span class="doccomment">/// Iterator over all possible directions.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">iter</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="kw">impl</span> <span class="ident">DoubleEndedIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">Direction</span><span class="op">&gt;</span> {
-        <span class="self">Self</span><span class="ident">::ALL</span>.<span class="ident">iter</span>().<span class="ident">copied</span>()
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">iter</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">DirectionIter</span> {
+        <span class="ident">DirectionIter</span> { <span class="ident">inner</span>: <span class="self">Self</span><span class="ident">::ALL</span>.<span class="ident">iter</span>() }
+    }
+
+    <span class="doccomment">/// Creates a direction from the given axis in the positive direction (i.e.</span>
+    <span class="doccomment">/// `X -&gt; Right` and `Y -&gt; Down`).</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_axis_pos</span>(<span class="ident">axis</span>: <span class="ident">Axis</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">match</span> <span class="ident">axis</span> {
+            <span class="ident">Axis::X</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Direction::Right</span>,
+            <span class="ident">Axis::Y</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Direction::Down</span>,
+        }
+    }
+
+    <span class="doccomment">/// Creates a direction from the given axis in the negative direction (i.e.</span>
+    <span class="doccomment">/// `X -&gt; Left` and `Y -&gt; Up`).</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_axis_neg</span>(<span class="ident">axis</span>: <span class="ident">Axis</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="kw">match</span> <span class="ident">axis</span> {
+            <span class="ident">Axis::X</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Direction::Left</span>,
+            <span class="ident">Axis::Y</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Direction::Up</span>,
+        }
     }
 
     <span class="doccomment">/// Axis on which the direciton varies.</span>
@@ -200,6 +268,32 @@
         }
     }
 }
+
+<span class="doccomment">/// Iterator over all &quot;straight&quot; 2D directions. See [`Direction::iter`].</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">DirectionIter</span> {
+    <span class="ident">inner</span>: <span class="ident">slice::Iter</span><span class="op">&lt;</span><span class="lifetime">&#39;static</span>, <span class="ident">Direction</span><span class="op">&gt;</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">DirectionIter</span> {
+    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">Direction</span>;
+
+    <span class="kw">fn</span> <span class="ident">next</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Item</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">next</span>().<span class="ident">copied</span>()
+    }
+
+    <span class="kw">fn</span> <span class="ident">size_hint</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">usize</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>) {
+        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">size_hint</span>()
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">DoubleEndedIterator</span> <span class="kw">for</span> <span class="ident">DirectionIter</span> {
+    <span class="kw">fn</span> <span class="ident">next_back</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="ident">::Item</span><span class="op">&gt;</span> {
+        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">next_back</span>().<span class="ident">copied</span>()
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">ExactSizeIterator</span> <span class="kw">for</span> <span class="ident">DirectionIter</span> {}
 
 <span class="doccomment">/// A vector written as a magnitude and a direction.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>)]</span>
