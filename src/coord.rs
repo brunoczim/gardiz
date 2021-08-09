@@ -224,7 +224,7 @@ impl<'elems, T> Vec2<&'elems mut T> {
 }
 
 impl<T> Vec2<T> {
-    /// Computes the dot product of the vector, i.e. `x1*x2 + y1*y2`.
+    /// Computes the dot product of the vector, i.e. `x1 * x2 + y1 * y2`.
     ///
     /// # Examples
     /// ```
