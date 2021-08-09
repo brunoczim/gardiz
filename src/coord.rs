@@ -293,8 +293,8 @@ impl<T> Vec2<T> {
         prod.y.checked_add(&prod.x)
     }
 
-    /// Computes the square of the magnitude of the vector. The formula is: `x
-    /// * x + y * y`.
+    /// Computes the square of the magnitude of the vector. The formula is:
+    /// `x * x + y * y`.
     ///
     /// # Examples
     /// ```
