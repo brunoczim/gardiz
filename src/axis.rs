@@ -12,10 +12,36 @@ pub enum Axis {
 }
 
 impl Axis {
-    /// List of all possible axes.
+    /// List of all possible axes. Please note that this requires no
+    /// heap-allocation and is very cheap.
     pub const ALL: [Axis; 2] = [Axis::Y, Axis::X];
 
     /// Iterator over all axes.
+    ///
+    /// # Examples
+    ///
+    /// Note that these examples put the axes in a vector, but if you want an
+    /// array of axes, just use [`Axis::ALL`].
+    ///
+    /// ## Default Order
+    /// ```rust
+    /// use gardiz::axis::{self, Axis};
+    ///
+    /// # fn main() {
+    /// let axes: Vec<Axis> = Axis::iter().collect();
+    /// assert_eq!(vec![Axis::Y, Axis::X], axes);
+    /// # }
+    /// ```
+    ///
+    /// ## Reverse Order
+    /// ```rust
+    /// use gardiz::axis::{self, Axis};
+    ///
+    /// # fn main() {
+    /// let axes: Vec<Axis> = Axis::iter().rev().collect();
+    /// assert_eq!(vec![Axis::X, Axis::Y], axes);
+    /// # }
+    /// ```
     pub fn iter() -> Iter {
         Iter { inner: Self::ALL.iter() }
     }

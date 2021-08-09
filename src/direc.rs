@@ -20,11 +20,43 @@ pub enum Direction {
 }
 
 impl Direction {
-    /// List of all possible directions.
+    /// List of all possible directions. Please note that this requires no
+    /// heap-allocation and is very cheap.
     pub const ALL: [Direction; 4] =
         [Direction::Up, Direction::Down, Direction::Left, Direction::Right];
 
-    /// Iterator over all possible directions.
+    /// Iterator over all directions.
+    ///
+    /// # Examples
+    ///
+    /// Note that these examples put the directions in a vector, but if you want
+    /// an array of directions, just use [`Direction::ALL`].
+    ///
+    /// ## Default Order
+    /// ```rust
+    /// use gardiz::direc::{self, Direction};
+    ///
+    /// # fn main() {
+    /// let direcs: Vec<Direction> = Direction::iter().collect();
+    /// assert_eq!(
+    ///     vec![Direction::Up, Direction::Down, Direction::Left, Direction::Right],
+    ///     direcs
+    /// );
+    /// # }
+    /// ```
+    ///
+    /// ## Reverse Order
+    /// ```rust
+    /// use gardiz::direc::{self, Direction};
+    ///
+    /// # fn main() {
+    /// let direcs: Vec<Direction> = Direction::iter().rev().collect();
+    /// assert_eq!(
+    ///     vec![Direction::Right, Direction::Left, Direction::Down, Direction::Up],
+    ///     direcs
+    /// );
+    /// # }
+    /// ```
     pub fn iter() -> Iter {
         Iter { inner: Self::ALL.iter() }
     }

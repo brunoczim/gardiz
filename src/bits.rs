@@ -83,7 +83,7 @@ where
 }
 
 /// Trait for getting the "excess" that is the half of an unsigned type's
-/// maximum value, typically `0111...1111`. Types should not worry with this
+/// maximum value, typically `1000...0000`. Types should not worry with this
 /// trait, but instead implement [`Unsigned`] and [`Bounded`], since there is a
 /// blank implementation for them, and there is no other way to implement the
 /// trait (`Unsigned` and `Bounded` are super traits of this trait).

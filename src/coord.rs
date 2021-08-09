@@ -225,6 +225,16 @@ impl<'elems, T> Vec2<&'elems mut T> {
 
 impl<T> Vec2<T> {
     /// Computes the dot product of the vector, i.e. `x1*x2 + y1*y2`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use gardiz::coord::Vec2;
+    /// # fn main() {
+    /// let left: Vec2<u16> = Vec2 { x: 5, y: 3 };
+    /// let right = Vec2 { x: 4, y: 8 };
+    /// assert_eq!(left.dot(right), 5 * 4 + 3 * 8);
+    /// # }
+    /// ```
     pub fn dot<U, A>(self, other: Vec2<U>) -> A::Output
     where
         T: Mul<U, Output = A>,
@@ -284,6 +294,15 @@ impl<T> Vec2<T> {
 
     /// Computes the square of the magnitude of the vector. The formula is: `x
     /// * x + y * y`.
+    ///
+    /// # Examples
+    /// ```
+    /// # use gardiz::coord::Vec2;
+    /// # fn main() {
+    /// let vector: Vec2<u16> = Vec2 { x: 5, y: 3 };
+    /// assert_eq!(vector.sqr_magnitude(), 5 * 5 + 3 * 3);
+    /// # }
+    /// ```
     pub fn sqr_magnitude<A>(self) -> A::Output
     where
         T: Clone,
@@ -377,6 +396,17 @@ impl<T> Vec2<T> {
     }
 
     /// Computes the magnitude of the vector truncated (as an integer).
+    ///
+    /// # Examples
+    /// ```
+    /// # use gardiz::coord::Vec2;
+    /// use num::integer::Roots;
+    ///
+    /// # fn main() {
+    /// let vector: Vec2<u16> = Vec2 { x: 4, y: 3 };
+    /// assert_eq!(vector.int_magnitude(), 5);
+    /// # }
+    /// ```
     pub fn int_magnitude<A>(self) -> A::Output
     where
         T: Clone,
@@ -427,6 +457,17 @@ impl<T> Vec2<T> {
     }
 
     /// Moves this vector in the given direction by one.
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use gardiz::coord::Vec2;
+    /// use gardiz::direc::Direction;
+    ///
+    /// # fn main() {
+    /// let vector: Vec2<u16> = Vec2 { x: 4, y: 3 };
+    /// assert_eq!(vector.move_one(Direction::Up), Vec2 { x: 4, y: 2 });
+    /// # }
+    /// ```
     pub fn move_one(self, direction: Direction) -> Self
     where
         T: Add<Output = T> + Sub<Output = T> + One,
@@ -461,33 +502,19 @@ impl<T> Vec2<T> {
         self.checked_move_by(&DirecVector { direction, magnitude: T::one() })
     }
 
-    /// Returns a "straight" direction into another point. Returns `None` if
-    /// there is no straight direction between this point and the other point.
-    pub fn direction_to(&self, other: &Self) -> Option<Direction>
-    where
-        T: Ord,
-    {
-        let cmping = self
-            .as_ref()
-            .zip_with(other.as_ref(), |this, other| this.cmp(&other));
-        match cmping {
-            Vec2 { x: Ordering::Equal, y: Ordering::Greater } => {
-                Some(Direction::Up)
-            },
-            Vec2 { x: Ordering::Equal, y: Ordering::Less } => {
-                Some(Direction::Down)
-            },
-            Vec2 { x: Ordering::Greater, y: Ordering::Equal } => {
-                Some(Direction::Left)
-            },
-            Vec2 { x: Ordering::Less, y: Ordering::Equal } => {
-                Some(Direction::Right)
-            },
-            _ => None,
-        }
-    }
-
     /// Moves this vector in the given direction by the given amount.
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use gardiz::coord::Vec2;
+    /// use gardiz::direc::{Direction, DirecVector};
+    ///
+    /// # fn main() {
+    /// let vector: Vec2<u16> = Vec2 { x: 4, y: 3 };
+    /// let direc_vector = DirecVector { direction: Direction::Right, magnitude: 5 };
+    /// assert_eq!(vector.move_by(direc_vector), Vec2 { x: 9, y: 3 });
+    /// # }
+    /// ```
     pub fn move_by<U>(self, vector: DirecVector<U>) -> Self
     where
         T: Add<U, Output = T> + Sub<U, Output = T>,
@@ -568,6 +595,32 @@ impl<T> Vec2<T> {
         Some(result)
     }
 
+    /// Returns a "straight" direction into another point. Returns `None` if
+    /// there is no straight direction between this point and the other point.
+    pub fn direction_to(&self, other: &Self) -> Option<Direction>
+    where
+        T: Ord,
+    {
+        let cmping = self
+            .as_ref()
+            .zip_with(other.as_ref(), |this, other| this.cmp(&other));
+        match cmping {
+            Vec2 { x: Ordering::Equal, y: Ordering::Greater } => {
+                Some(Direction::Up)
+            },
+            Vec2 { x: Ordering::Equal, y: Ordering::Less } => {
+                Some(Direction::Down)
+            },
+            Vec2 { x: Ordering::Greater, y: Ordering::Equal } => {
+                Some(Direction::Left)
+            },
+            Vec2 { x: Ordering::Less, y: Ordering::Equal } => {
+                Some(Direction::Right)
+            },
+            _ => None,
+        }
+    }
+
     /// Useful for showing signed coordinates to humans, when the vector
     /// represents coordinates. Flips the Y coordinate, i.e. inverts the number
     /// line, the greatest value becomes the lesser, the lesser becomes the
@@ -588,6 +641,19 @@ impl<T> Vec2<T> {
     /// flips the Y coordinate. The formula is something like this:
     ///
     /// `center_origin_at([x,y], N) = [x - N, -1 - (y - N)]`
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use gardiz::coord::Vec2;
+    /// # fn main() {
+    /// let vector: Vec2<u8> = Vec2 { x: 105, y: 97 };
+    /// let centered: Vec2<i8> = Vec2 { x: 5, y: 102 };
+    /// assert_eq!(
+    ///     vector.center_origin_at(&Vec2 { x: 100, y: 200 }),
+    ///     centered
+    /// );
+    /// # }
+    /// ```
     pub fn center_origin_at<U>(self, origin: &Vec2<T>) -> Vec2<U>
     where
         Self: ExcessToSigned<Target = Vec2<U>>,
@@ -602,7 +668,16 @@ impl<T> Vec2<T> {
     /// First of all, half the maximum value becomes the new zero, then Y-axis
     /// is flipped. The formula is something like this:
     ///
-    /// `center_origin_at([x,y]) = [x - 0111...1111, -1 - (y - 0111...1111)]`
+    /// `center_origin_at([x,y]) = [x - 1000...0000, -1 - (y - 1000...0000)]`
+    /// # Examples
+    /// ```rust
+    /// # use gardiz::coord::Vec2;
+    /// # fn main() {
+    /// let vector: Vec2<u8> = Vec2 { x: 127, y: 130 };
+    /// let centered: Vec2<i8> = Vec2 { x: -1, y: -3 };
+    /// assert_eq!(vector.center_origin(), centered);
+    /// # }
+    /// ```
     pub fn center_origin<U>(self) -> Vec2<U>
     where
         Self: ExcessToSigned<Target = Vec2<U>> + HalfExcess,
