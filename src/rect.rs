@@ -487,7 +487,7 @@ impl<T> Rect<T> {
 impl<T, S> Rect<T, S> {
     /// Iterator over all coordinates of this rectangle in the direction of
     /// columns.
-    pub fn columns<'this>(&'this self) -> RectColumns<T>
+    pub fn columns<'this>(&'this self) -> Columns<T>
     where
         &'this S: Sub<S, Output = T>,
         S: One + Zero,
@@ -495,17 +495,17 @@ impl<T, S> Rect<T, S> {
         &'this T: Add<&'this S, Output = T>,
         T: One + AddAssign + Ord + Clone,
     {
-        let inner = self.end_non_empty_ref().map(|end| RectColumnsInner {
+        let inner = self.end_non_empty_ref().map(|end| ColumnsInner {
             start: self.start.clone(),
             end: end.clone(),
             front: self.start.clone(),
             back: end,
         });
-        RectColumns { inner }
+        Columns { inner }
     }
 
     /// Iterator over all coordinates of this rectangle in the direction of .
-    pub fn rows<'this>(&'this self) -> RectRows<T>
+    pub fn rows<'this>(&'this self) -> Rows<T>
     where
         &'this S: Sub<S, Output = T>,
         S: One + Zero,
@@ -513,17 +513,17 @@ impl<T, S> Rect<T, S> {
         &'this T: Add<&'this S, Output = T>,
         T: One + AddAssign + Ord + Clone,
     {
-        let inner = self.end_non_empty_ref().map(|end| RectRowsInner {
+        let inner = self.end_non_empty_ref().map(|end| RowsInner {
             start: self.start.clone(),
             end: end.clone(),
             front: self.start.clone(),
             back: end,
         });
-        RectRows { inner }
+        Rows { inner }
     }
 
     /// Iterator over the inner borders of this rectangle.
-    pub fn borders<'this>(&'this self) -> RectBorders<T>
+    pub fn borders<'this>(&'this self) -> Borders<T>
     where
         &'this S: Sub<S, Output = T>,
         S: One + Zero,
@@ -531,23 +531,23 @@ impl<T, S> Rect<T, S> {
         &'this T: Add<&'this S, Output = T>,
         T: AddAssign + One + Ord + Clone,
     {
-        let inner = self.end_non_empty_ref().map(|end| RectBordersInner {
+        let inner = self.end_non_empty_ref().map(|end| BordersInner {
             start: self.start.clone(),
             fixed_axis: Axis::X,
             end,
             curr: self.start.clone(),
         });
-        RectBorders { inner }
+        Borders { inner }
     }
 }
 
 /// Iterator over columns of the rectangle. See [`Rect::columns`].
 #[derive(Debug)]
-pub struct RectColumns<T> {
-    inner: Option<RectColumnsInner<T>>,
+pub struct Columns<T> {
+    inner: Option<ColumnsInner<T>>,
 }
 
-impl<T> Iterator for RectColumns<T>
+impl<T> Iterator for Columns<T>
 where
     T: One + AddAssign + Ord + Clone,
 {
@@ -572,7 +572,7 @@ where
     }
 }
 
-impl<T> DoubleEndedIterator for RectColumns<T>
+impl<T> DoubleEndedIterator for Columns<T>
 where
     T: One + AddAssign + SubAssign + Ord + Clone,
 {
@@ -596,14 +596,14 @@ where
 }
 
 #[derive(Debug)]
-struct RectColumnsInner<T> {
+struct ColumnsInner<T> {
     start: Vec2<T>,
     end: Vec2<T>,
     front: Vec2<T>,
     back: Vec2<T>,
 }
 
-impl<T> RectColumnsInner<T>
+impl<T> ColumnsInner<T>
 where
     T: Ord,
 {
@@ -614,11 +614,11 @@ where
 
 /// Iterator over rows of the rectangle. See [`Rect::rows`].
 #[derive(Debug)]
-pub struct RectRows<T> {
-    inner: Option<RectRowsInner<T>>,
+pub struct Rows<T> {
+    inner: Option<RowsInner<T>>,
 }
 
-impl<T> Iterator for RectRows<T>
+impl<T> Iterator for Rows<T>
 where
     T: One + AddAssign + Ord + Clone,
 {
@@ -643,7 +643,7 @@ where
     }
 }
 
-impl<T> DoubleEndedIterator for RectRows<T>
+impl<T> DoubleEndedIterator for Rows<T>
 where
     T: One + AddAssign + SubAssign + Ord + Clone,
 {
@@ -667,14 +667,14 @@ where
 }
 
 #[derive(Debug)]
-struct RectRowsInner<T> {
+struct RowsInner<T> {
     start: Vec2<T>,
     end: Vec2<T>,
     front: Vec2<T>,
     back: Vec2<T>,
 }
 
-impl<T> RectRowsInner<T>
+impl<T> RowsInner<T>
 where
     T: Ord,
 {
@@ -685,11 +685,11 @@ where
 
 /// Iterator over inner borders of the rectangle. See [`Rect::borders`].
 #[derive(Debug)]
-pub struct RectBorders<T> {
-    inner: Option<RectBordersInner<T>>,
+pub struct Borders<T> {
+    inner: Option<BordersInner<T>>,
 }
 
-impl<T> Iterator for RectBorders<T>
+impl<T> Iterator for Borders<T>
 where
     T: AddAssign + One + Ord + Clone,
 {
@@ -735,14 +735,14 @@ where
 }
 
 #[derive(Debug)]
-struct RectBordersInner<T> {
+struct BordersInner<T> {
     start: Vec2<T>,
     end: Vec2<T>,
     fixed_axis: Axis,
     curr: Vec2<T>,
 }
 
-impl<T> RectBordersInner<T>
+impl<T> BordersInner<T>
 where
     T: AddAssign + One + Clone,
 {
