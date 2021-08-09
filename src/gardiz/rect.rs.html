@@ -1264,7 +1264,7 @@
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">S</span><span class="op">&gt;</span> <span class="ident">Rect</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">S</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Iterator over all coordinates of this rectangle in the direction of</span>
     <span class="doccomment">/// columns.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">columns</span><span class="op">&lt;</span><span class="lifetime">&#39;this</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">RectColumns</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">columns</span><span class="op">&lt;</span><span class="lifetime">&#39;this</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Columns</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">S</span>: <span class="ident">Sub</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">S</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">Zero</span>,
@@ -1272,17 +1272,17 @@
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">T</span>: <span class="ident">Add</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">S</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">T</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Clone</span>,
     {
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">end_non_empty_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">end</span><span class="op">|</span> <span class="ident">RectColumnsInner</span> {
+        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">end_non_empty_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">end</span><span class="op">|</span> <span class="ident">ColumnsInner</span> {
             <span class="ident">start</span>: <span class="self">self</span>.<span class="ident">start</span>.<span class="ident">clone</span>(),
             <span class="ident">end</span>: <span class="ident">end</span>.<span class="ident">clone</span>(),
             <span class="ident">front</span>: <span class="self">self</span>.<span class="ident">start</span>.<span class="ident">clone</span>(),
             <span class="ident">back</span>: <span class="ident">end</span>,
         });
-        <span class="ident">RectColumns</span> { <span class="ident">inner</span> }
+        <span class="ident">Columns</span> { <span class="ident">inner</span> }
     }
 
     <span class="doccomment">/// Iterator over all coordinates of this rectangle in the direction of .</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rows</span><span class="op">&lt;</span><span class="lifetime">&#39;this</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">RectRows</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">rows</span><span class="op">&lt;</span><span class="lifetime">&#39;this</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Rows</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">S</span>: <span class="ident">Sub</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">S</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">Zero</span>,
@@ -1290,17 +1290,17 @@
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">T</span>: <span class="ident">Add</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">S</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">T</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Clone</span>,
     {
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">end_non_empty_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">end</span><span class="op">|</span> <span class="ident">RectRowsInner</span> {
+        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">end_non_empty_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">end</span><span class="op">|</span> <span class="ident">RowsInner</span> {
             <span class="ident">start</span>: <span class="self">self</span>.<span class="ident">start</span>.<span class="ident">clone</span>(),
             <span class="ident">end</span>: <span class="ident">end</span>.<span class="ident">clone</span>(),
             <span class="ident">front</span>: <span class="self">self</span>.<span class="ident">start</span>.<span class="ident">clone</span>(),
             <span class="ident">back</span>: <span class="ident">end</span>,
         });
-        <span class="ident">RectRows</span> { <span class="ident">inner</span> }
+        <span class="ident">Rows</span> { <span class="ident">inner</span> }
     }
 
     <span class="doccomment">/// Iterator over the inner borders of this rectangle.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">borders</span><span class="op">&lt;</span><span class="lifetime">&#39;this</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">RectBorders</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">borders</span><span class="op">&lt;</span><span class="lifetime">&#39;this</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Borders</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">S</span>: <span class="ident">Sub</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">S</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">Zero</span>,
@@ -1308,23 +1308,23 @@
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">T</span>: <span class="ident">Add</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;this</span> <span class="ident">S</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="ident">T</span>: <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">One</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Clone</span>,
     {
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">end_non_empty_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">end</span><span class="op">|</span> <span class="ident">RectBordersInner</span> {
+        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">end_non_empty_ref</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">end</span><span class="op">|</span> <span class="ident">BordersInner</span> {
             <span class="ident">start</span>: <span class="self">self</span>.<span class="ident">start</span>.<span class="ident">clone</span>(),
             <span class="ident">fixed_axis</span>: <span class="ident">Axis::X</span>,
             <span class="ident">end</span>,
             <span class="ident">curr</span>: <span class="self">self</span>.<span class="ident">start</span>.<span class="ident">clone</span>(),
         });
-        <span class="ident">RectBorders</span> { <span class="ident">inner</span> }
+        <span class="ident">Borders</span> { <span class="ident">inner</span> }
     }
 }
 
 <span class="doccomment">/// Iterator over columns of the rectangle. See [`Rect::columns`].</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RectColumns</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RectColumnsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Columns</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="ident">inner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ColumnsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">RectColumns</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Columns</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Clone</span>,
 {
@@ -1349,7 +1349,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">DoubleEndedIterator</span> <span class="kw">for</span> <span class="ident">RectColumns</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">DoubleEndedIterator</span> <span class="kw">for</span> <span class="ident">Columns</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">SubAssign</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Clone</span>,
 {
@@ -1373,14 +1373,14 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">struct</span> <span class="ident">RectColumnsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">struct</span> <span class="ident">ColumnsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="ident">start</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">end</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">front</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">back</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">RectColumnsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ColumnsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Ord</span>,
 {
@@ -1391,11 +1391,11 @@
 
 <span class="doccomment">/// Iterator over rows of the rectangle. See [`Rect::rows`].</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RectRows</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RectRowsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Rows</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="ident">inner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RowsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">RectRows</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Rows</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Clone</span>,
 {
@@ -1420,7 +1420,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">DoubleEndedIterator</span> <span class="kw">for</span> <span class="ident">RectRows</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">DoubleEndedIterator</span> <span class="kw">for</span> <span class="ident">Rows</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">One</span> <span class="op">+</span> <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">SubAssign</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Clone</span>,
 {
@@ -1444,14 +1444,14 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">struct</span> <span class="ident">RectRowsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">struct</span> <span class="ident">RowsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="ident">start</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">end</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">front</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">back</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">RectRowsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">RowsInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Ord</span>,
 {
@@ -1462,11 +1462,11 @@
 
 <span class="doccomment">/// Iterator over inner borders of the rectangle. See [`Rect::borders`].</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RectBorders</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RectBordersInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Borders</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="ident">inner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">BordersInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">RectBorders</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Iterator</span> <span class="kw">for</span> <span class="ident">Borders</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">One</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Clone</span>,
 {
@@ -1512,14 +1512,14 @@
 }
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">struct</span> <span class="ident">RectBordersInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+<span class="kw">struct</span> <span class="ident">BordersInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="ident">start</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">end</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">fixed_axis</span>: <span class="ident">Axis</span>,
     <span class="ident">curr</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">RectBordersInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">BordersInner</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">AddAssign</span> <span class="op">+</span> <span class="ident">One</span> <span class="op">+</span> <span class="ident">Clone</span>,
 {
