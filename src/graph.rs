@@ -1,4 +1,4 @@
-//! A graph of points in a plane.
+//! A simple graph of points in a plane.
 
 #[cfg(test)]
 mod test;
@@ -25,11 +25,12 @@ use std::{
 /// vertex is connected?
 pub type VertexEdges = DirecMap<bool>;
 
-/// A graph of points in a plane. Two points can only be connected once with
-/// each other or not connected at all (with each other), no pair of points can
-/// be connected with each other more than once. Also, graphs might not be
-/// necessarily planar, although they can (this means two edges can overlap).
-/// Points can only be connected in "straight" 2D directions.
+/// A simple graph of points in a plane. Being simple means two points can only
+/// be connected once with each other or not connected at all (with each other),
+/// no pair of points can be connected with each other more than once. Also,
+/// graphs might not be necessarily planar, although they can (this means two
+/// edges can overlap). Points can only be connected in "straight" 2D
+/// directions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Graph<T>
 where

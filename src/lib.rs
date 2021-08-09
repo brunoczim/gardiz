@@ -11,12 +11,13 @@
 //! be thought as specs of sub-planes. Both of them supports getting the first
 //! or the last neighbour in a given direction.
 //!
-//! Finally, we have graphs whose vertices are points in the plane and they can
-//! be connected (forming edges). It is useful to create planar graphs (i.e. no
-//! edges cross), but the implementation won't prevent you from forming
-//! non-planar graphs, although the graph still is in a 2D plane. The graph also
-//! implements the "A Star" (or "A*") algorithm to make a path between two
-//! points, using only a given region (creating vertices if necessary).
+//! Finally, the crate has simple graphs whose vertices are points in the plane
+//! and they can be connected (forming edges). It is useful to create planar
+//! graphs (i.e. no edges cross), but the implementation won't prevent you from
+//! forming non-planar graphs, although the graph still is in a 2D plane. The
+//! graph also implements the "A Star" (or "A*") algorithm to make a path
+//! between two points, using only a given region (creating vertices if
+//! necessary).
 //!
 //! As an example, here is the execution of A*:
 //! ```rust
