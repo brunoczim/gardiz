@@ -14,7 +14,7 @@ true bit-cast, this conversion should treat the unsigned number as “excess
 of N” number. So, conversion should be equivalent to this: <code>i = u - N</code> (i.e.
 <code>N</code> becomes the new zero).</p>
 </td></tr><tr class="module-item"><td><a class="trait" href="trait.HalfExcess.html" title="gardiz::bits::HalfExcess trait">HalfExcess</a></td><td class="docblock-short"><p>Trait for getting the “excess” that is the half of an unsigned type’s
-maximum value, typically <code>0111...1111</code>. Types should not worry with this
+maximum value, typically <code>1000...0000</code>. Types should not worry with this
 trait, but instead implement <a href="../../num_traits/sign/trait.Unsigned.html" title="Unsigned"><code>Unsigned</code></a> and <a href="../../num_traits/bounds/trait.Bounded.html" title="Bounded"><code>Bounded</code></a>, since there is a
 blank implementation for them, and there is no other way to implement the
 trait (<code>Unsigned</code> and <code>Bounded</code> are super traits of this trait).</p>

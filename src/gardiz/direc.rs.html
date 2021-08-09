@@ -177,6 +177,38 @@
 <span id="175">175</span>
 <span id="176">176</span>
 <span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
 </pre><pre class="rust">
 <span class="doccomment">//! Utilities related to directions in the plane.</span>
 
@@ -200,11 +232,43 @@
 }
 
 <span class="kw">impl</span> <span class="ident">Direction</span> {
-    <span class="doccomment">/// List of all possible directions.</span>
+    <span class="doccomment">/// List of all possible directions. Please note that this requires no</span>
+    <span class="doccomment">/// heap-allocation and is very cheap.</span>
     <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">ALL</span>: [<span class="ident">Direction</span>; <span class="number">4</span>] <span class="op">=</span>
         [<span class="ident">Direction::Up</span>, <span class="ident">Direction::Down</span>, <span class="ident">Direction::Left</span>, <span class="ident">Direction::Right</span>];
 
-    <span class="doccomment">/// Iterator over all possible directions.</span>
+    <span class="doccomment">/// Iterator over all directions.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # Examples</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Note that these examples put the directions in a vector, but if you want</span>
+    <span class="doccomment">/// an array of directions, just use [`Direction::ALL`].</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ## Default Order</span>
+    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// use gardiz::direc::{self, Direction};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # fn main() {</span>
+    <span class="doccomment">/// let direcs: Vec&lt;Direction&gt; = Direction::iter().collect();</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     vec![Direction::Up, Direction::Down, Direction::Left, Direction::Right],</span>
+    <span class="doccomment">///     direcs</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">/// # }</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ## Reverse Order</span>
+    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// use gardiz::direc::{self, Direction};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # fn main() {</span>
+    <span class="doccomment">/// let direcs: Vec&lt;Direction&gt; = Direction::iter().rev().collect();</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     vec![Direction::Right, Direction::Left, Direction::Down, Direction::Up],</span>
+    <span class="doccomment">///     direcs</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">/// # }</span>
+    <span class="doccomment">/// ```</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">iter</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Iter</span> {
         <span class="ident">Iter</span> { <span class="ident">inner</span>: <span class="self">Self</span><span class="ident">::ALL</span>.<span class="ident">iter</span>() }
     }
