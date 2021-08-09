@@ -783,8 +783,9 @@
 <span id="781">781</span>
 <span id="782">782</span>
 <span id="783">783</span>
+<span id="784">784</span>
 </pre><pre class="rust">
-<span class="doccomment">//! A graph of points in a plane.</span>
+<span class="doccomment">//! A simple graph of points in a plane.</span>
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">test</span>;
@@ -811,11 +812,12 @@
 <span class="doccomment">/// vertex is connected?</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">VertexEdges</span> <span class="op">=</span> <span class="ident">DirecMap</span><span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span>;
 
-<span class="doccomment">/// A graph of points in a plane. Two points can only be connected once with</span>
-<span class="doccomment">/// each other or not connected at all (with each other), no pair of points can</span>
-<span class="doccomment">/// be connected with each other more than once. Also, graphs might not be</span>
-<span class="doccomment">/// necessarily planar, although they can (this means two edges can overlap).</span>
-<span class="doccomment">/// Points can only be connected in &quot;straight&quot; 2D directions.</span>
+<span class="doccomment">/// A simple graph of points in a plane. Being simple means two points can only</span>
+<span class="doccomment">/// be connected once with each other or not connected at all (with each other),</span>
+<span class="doccomment">/// no pair of points can be connected with each other more than once. Also,</span>
+<span class="doccomment">/// graphs might not be necessarily planar, although they can (this means two</span>
+<span class="doccomment">/// edges can overlap). Points can only be connected in &quot;straight&quot; 2D</span>
+<span class="doccomment">/// directions.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Graph</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>

@@ -141,6 +141,7 @@
 <span id="139">139</span>
 <span id="140">140</span>
 <span id="141">141</span>
+<span id="142">142</span>
 </pre><pre class="rust">
 <span class="doccomment">//! Library for 2D geometric spaces (AKA &quot;the plane&quot;). This library focuses on</span>
 <span class="doccomment">//! integer geometry, and is intended to be used in discrete 2D games.</span>
@@ -155,12 +156,13 @@
 <span class="doccomment">//! be thought as specs of sub-planes. Both of them supports getting the first</span>
 <span class="doccomment">//! or the last neighbour in a given direction.</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! Finally, we have graphs whose vertices are points in the plane and they can</span>
-<span class="doccomment">//! be connected (forming edges). It is useful to create planar graphs (i.e. no</span>
-<span class="doccomment">//! edges cross), but the implementation won&#39;t prevent you from forming</span>
-<span class="doccomment">//! non-planar graphs, although the graph still is in a 2D plane. The graph also</span>
-<span class="doccomment">//! implements the &quot;A Star&quot; (or &quot;A*&quot;) algorithm to make a path between two</span>
-<span class="doccomment">//! points, using only a given region (creating vertices if necessary).</span>
+<span class="doccomment">//! Finally, the crate has simple graphs whose vertices are points in the plane</span>
+<span class="doccomment">//! and they can be connected (forming edges). It is useful to create planar</span>
+<span class="doccomment">//! graphs (i.e. no edges cross), but the implementation won&#39;t prevent you from</span>
+<span class="doccomment">//! forming non-planar graphs, although the graph still is in a 2D plane. The</span>
+<span class="doccomment">//! graph also implements the &quot;A Star&quot; (or &quot;A*&quot;) algorithm to make a path</span>
+<span class="doccomment">//! between two points, using only a given region (creating vertices if</span>
+<span class="doccomment">//! necessary).</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! As an example, here is the execution of A*:</span>
 <span class="doccomment">//! ```rust</span>
