@@ -28,6 +28,23 @@ pub struct Rect<T, S = T> {
 impl<T, S> Rect<T, S> {
     /// Builds the rectangle from the given range `start .. end` (i.e. end
     /// excluded).
+    ///
+    /// # Examples
+    /// ```rust
+    /// use gardiz::{rect::Rect, coord::Vec2};
+    ///
+    /// # fn main() {
+    /// let built_from_range = Rect::<u16>::from_range(
+    ///     Vec2 { x: 5, y: 3 },
+    ///     Vec2 { x: 7, y: 9 },
+    /// );
+    /// let actual = Rect {
+    ///     start: Vec2 { x: 5, y: 3 },
+    ///     size: Vec2 { x: 2, y: 6 },
+    /// };
+    /// assert_eq!(built_from_range, actual);
+    /// # }
+    /// ```
     pub fn from_range<U>(start: Vec2<T>, end: Vec2<U>) -> Self
     where
         T: Clone,
@@ -53,6 +70,23 @@ impl<T> Rect<T> {
 impl<T, S> Rect<T, S> {
     /// Builds the rectangle from the given inclusive range `start ..= end`
     /// (i.e. end included).
+    ///
+    /// # Examples
+    /// ```rust
+    /// use gardiz::{rect::Rect, coord::Vec2};
+    ///
+    /// # fn main() {
+    /// let built_from_range = Rect::<u16>::from_range_incl(
+    ///     Vec2 { x: 5, y: 3 },
+    ///     Vec2 { x: 6, y: 8 },
+    /// );
+    /// let actual = Rect {
+    ///     start: Vec2 { x: 5, y: 3 },
+    ///     size: Vec2 { x: 2, y: 6 },
+    /// };
+    /// assert_eq!(built_from_range, actual);
+    /// # }
+    /// ```
     pub fn from_range_incl<Z>(start: Vec2<T>, end: Vec2<T>) -> Self
     where
         T: Sub<Output = Z> + Clone + Ord,
@@ -96,6 +130,19 @@ impl<T, S> Rect<T, S> {
 
     /// Returns coordinates one unit past the end (bottom-right) of the
     /// rectangle, i.e. the end excluded from the rectangle.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use gardiz::{rect::Rect, coord::Vec2};
+    ///
+    /// # fn main() {
+    /// let rectangle: Rect<u16> = Rect {
+    ///     start: Vec2 { x: 5, y: 3 },
+    ///     size: Vec2 { x: 2, y: 6 },
+    /// };
+    /// assert_eq!(rectangle.end(), Vec2 { x: 7, y: 9 });
+    /// # }
+    /// ```
     pub fn end(self) -> Vec2<T::Output>
     where
         T: Add<S>,
@@ -145,6 +192,19 @@ impl<T, S> Rect<T, S> {
 
     /// Returns the last coordinates (bottom-right) of the rectangle, i.e.
     /// returns an included end.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use gardiz::{rect::Rect, coord::Vec2};
+    ///
+    /// # fn main() {
+    /// let rectangle: Rect<u16> = Rect {
+    ///     start: Vec2 { x: 5, y: 3 },
+    ///     size: Vec2 { x: 2, y: 6 },
+    /// };
+    /// assert_eq!(rectangle.end_inclusive(), Vec2 { x: 6, y: 8 });
+    /// # }
+    /// ```
     pub fn end_inclusive<U, V>(self) -> Vec2<V>
     where
         S: Sub<Output = U> + One + Zero,
@@ -217,6 +277,34 @@ impl<T, S> Rect<T, S> {
     /// Returns last included coordinates of the rectangle (bottom-right),
     /// but if the rectangle is empty, the output is `None`. With this, it is
     /// possible to extract the end of a "full rectangle".
+    ///
+    /// # Examples
+    ///
+    /// ## Actually Non-Empty
+    /// ```rust
+    /// use gardiz::{rect::Rect, coord::Vec2};
+    ///
+    /// # fn main() {
+    /// let rectangle: Rect<u16> = Rect {
+    ///     start: Vec2 { x: 5, y: 3 },
+    ///     size: Vec2 { x: 2, y: 6 },
+    /// };
+    /// assert_eq!(rectangle.end_non_empty(), Some(Vec2 { x: 6, y: 8 }));
+    /// # }
+    /// ```
+    ///
+    /// ## Empty
+    /// ```rust
+    /// use gardiz::{rect::Rect, coord::Vec2};
+    ///
+    /// # fn main() {
+    /// let rectangle: Rect<u16> = Rect {
+    ///     start: Vec2 { x: 5, y: 3 },
+    ///     size: Vec2 { x: 0, y: 6 },
+    /// };
+    /// assert_eq!(rectangle.end_non_empty(), None);
+    /// # }
+    /// ```
     pub fn end_non_empty<U, V>(self) -> Option<Vec2<V>>
     where
         S: Sub<Output = U> + One + Zero,
@@ -286,6 +374,27 @@ impl<T, S> Rect<T, S> {
 
     /// Computes the overlapped area between two rectangles. An empty rectange
     /// is produced if both do not overlap.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use gardiz::{rect::Rect, coord::Vec2};
+    ///
+    /// # fn main() {
+    /// let left: Rect<u16> = Rect {
+    ///     start: Vec2 { x: 5, y: 3 },
+    ///     size: Vec2 { x: 10, y: 7 },
+    /// };
+    /// let right = Rect {
+    ///     start: Vec2 { x: 9, y: 4 },
+    ///     size: Vec2 { x: 9, y: 5 },
+    /// };
+    /// let overlapped = Rect {
+    ///     start: Vec2 { x: 9, y: 4 },
+    ///     size: Vec2 { x: 6, y: 5 },
+    /// };
+    /// assert_eq!(left.overlapped(&right), overlapped);
+    /// # }
+    /// ```
     pub fn overlapped<'params, U, Z>(
         &'params self,
         other: &'params Self,

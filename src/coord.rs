@@ -228,7 +228,8 @@ impl<T> Vec2<T> {
     ///
     /// # Examples
     /// ```
-    /// # use gardiz::coord::Vec2;
+    /// use gardiz::coord::Vec2;
+    ///
     /// # fn main() {
     /// let left: Vec2<u16> = Vec2 { x: 5, y: 3 };
     /// let right = Vec2 { x: 4, y: 8 };
@@ -297,7 +298,8 @@ impl<T> Vec2<T> {
     ///
     /// # Examples
     /// ```
-    /// # use gardiz::coord::Vec2;
+    /// use gardiz::coord::Vec2;
+    ///
     /// # fn main() {
     /// let vector: Vec2<u16> = Vec2 { x: 5, y: 3 };
     /// assert_eq!(vector.sqr_magnitude(), 5 * 5 + 3 * 3);
@@ -399,7 +401,7 @@ impl<T> Vec2<T> {
     ///
     /// # Examples
     /// ```
-    /// # use gardiz::coord::Vec2;
+    /// use gardiz::coord::Vec2;
     /// use num::integer::Roots;
     ///
     /// # fn main() {
@@ -460,7 +462,7 @@ impl<T> Vec2<T> {
     ///
     /// # Examples
     /// ```rust
-    /// # use gardiz::coord::Vec2;
+    /// use gardiz::coord::Vec2;
     /// use gardiz::direc::Direction;
     ///
     /// # fn main() {
@@ -506,7 +508,7 @@ impl<T> Vec2<T> {
     ///
     /// # Examples
     /// ```rust
-    /// # use gardiz::coord::Vec2;
+    /// use gardiz::coord::Vec2;
     /// use gardiz::direc::{Direction, DirecVector};
     ///
     /// # fn main() {
@@ -644,7 +646,8 @@ impl<T> Vec2<T> {
     ///
     /// # Examples
     /// ```rust
-    /// # use gardiz::coord::Vec2;
+    /// use gardiz::coord::Vec2;
+    ///
     /// # fn main() {
     /// let vector: Vec2<u8> = Vec2 { x: 105, y: 97 };
     /// let centered: Vec2<i8> = Vec2 { x: 5, y: 102 };
@@ -671,7 +674,8 @@ impl<T> Vec2<T> {
     /// `center_origin_at([x,y]) = [x - 1000...0000, -1 - (y - 1000...0000)]`
     /// # Examples
     /// ```rust
-    /// # use gardiz::coord::Vec2;
+    /// use gardiz::coord::Vec2;
+    ///
     /// # fn main() {
     /// let vector: Vec2<u8> = Vec2 { x: 127, y: 130 };
     /// let centered: Vec2<i8> = Vec2 { x: -1, y: -3 };

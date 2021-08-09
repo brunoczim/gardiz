@@ -80,9 +80,12 @@ fn make_graph() -> Graph<i32> {
         Vec2 { x: -9, y: 1399 },
     ]);
 
-    graph.connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 1, y: 0 }.as_ref());
-    graph.connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 0, y: -3 }.as_ref());
-    graph.connect(Vec2 { x: 3, y: -3 }.as_ref(), Vec2 { x: 0, y: -3 }.as_ref());
+    assert!(graph
+        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 1, y: 0 }.as_ref()));
+    assert!(graph
+        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 0, y: -3 }.as_ref()));
+    assert!(graph
+        .connect(Vec2 { x: 3, y: -3 }.as_ref(), Vec2 { x: 0, y: -3 }.as_ref()));
     graph.connect(Vec2 { x: 0, y: -8 }.as_ref(), Vec2 { x: 0, y: -3 }.as_ref());
     graph.connect(
         Vec2 { x: 3, y: -3 }.as_ref(),
@@ -201,6 +204,72 @@ fn connected_at() {
     assert!(graph
         .connected_at(Vec2 { x: -9, y: 1399 }.as_ref(), Direction::Right)
         .is_none());
+}
+
+#[test]
+fn connect_twice() {
+    let mut graph = make_graph();
+
+    assert!(!graph
+        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 1, y: 0 }.as_ref(),));
+    assert!(!graph
+        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 0, y: -3 }.as_ref(),));
+    assert!(
+        !graph.connect(
+            Vec2 { x: 3, y: -3 }.as_ref(),
+            Vec2 { x: 0, y: -3 }.as_ref(),
+        )
+    );
+
+    assert!(graph.are_connected(
+        Vec2 { x: 0, y: 0 }.as_ref(),
+        Vec2 { x: 1, y: 0 }.as_ref(),
+    ));
+    assert!(graph.are_connected(
+        Vec2 { x: 1, y: 0 }.as_ref(),
+        Vec2 { x: 0, y: 0 }.as_ref(),
+    ));
+
+    assert!(graph.are_connected(
+        Vec2 { x: 0, y: 0 }.as_ref(),
+        Vec2 { x: 0, y: -3 }.as_ref(),
+    ));
+    assert!(graph.are_connected(
+        Vec2 { x: 0, y: -3 }.as_ref(),
+        Vec2 { x: 0, y: 0 }.as_ref(),
+    ));
+
+    assert!(graph.are_connected(
+        Vec2 { x: 3, y: -3 }.as_ref(),
+        Vec2 { x: 0, y: -3 }.as_ref(),
+    ));
+    assert!(graph.are_connected(
+        Vec2 { x: 0, y: -3 }.as_ref(),
+        Vec2 { x: 3, y: -3 }.as_ref(),
+    ));
+
+    assert!(!graph.are_connected(
+        Vec2 { x: 3, y: -3 }.as_ref(),
+        Vec2 { x: 1, y: 0 }.as_ref(),
+    ));
+    assert!(!graph.are_connected(
+        Vec2 { x: 1, y: 0 }.as_ref(),
+        Vec2 { x: 3, y: -3 }.as_ref(),
+    ));
+
+    assert!(graph.connect(
+        Vec2 { x: -9, y: 1399 }.as_ref(),
+        Vec2 { x: -9, y: 1400 }.as_ref(),
+    ));
+
+    assert!(graph.are_connected(
+        Vec2 { x: -9, y: 1399 }.as_ref(),
+        Vec2 { x: -9, y: 1400 }.as_ref(),
+    ));
+    assert!(graph.are_connected(
+        Vec2 { x: -9, y: 1400 }.as_ref(),
+        Vec2 { x: -9, y: 1399 }.as_ref(),
+    ));
 }
 
 #[test]
