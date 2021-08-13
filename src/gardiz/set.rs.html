@@ -254,6 +254,14 @@
 <span id="252">252</span>
 <span id="253">253</span>
 <span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
 </pre><pre class="rust">
 <span class="doccomment">//! A set of coordinates/vectors in a plane optimized for the plane (and related</span>
 <span class="doccomment">//! utilites).</span>
@@ -267,10 +275,18 @@
 <span class="doccomment">/// The set of coordinates/vectors in a plane, optimized for being in the plane.</span>
 <span class="doccomment">/// Members of the set are `Vec2&lt;T&gt;`.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(
+    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;impl-serde&quot;</span>,
+    <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>, <span class="ident">serde::Deserialize</span>)
+)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Set</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Ord</span>,
 {
+    <span class="attribute">#[<span class="ident">cfg_attr</span>(
+        <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;impl-serde&quot;</span>,
+        <span class="ident">serde</span>(<span class="ident">bound</span>(<span class="ident">deserialize</span> <span class="op">=</span> <span class="string">&quot;T: serde::Deserialize&lt;&#39;de&gt; + Clone&quot;</span>))
+    )]</span>
     <span class="ident">inner</span>: <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">T</span>, ()<span class="op">&gt;</span>,
 }
 

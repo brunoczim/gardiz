@@ -784,6 +784,14 @@
 <span id="782">782</span>
 <span id="783">783</span>
 <span id="784">784</span>
+<span id="785">785</span>
+<span id="786">786</span>
+<span id="787">787</span>
+<span id="788">788</span>
+<span id="789">789</span>
+<span id="790">790</span>
+<span id="791">791</span>
+<span id="792">792</span>
 </pre><pre class="rust">
 <span class="doccomment">//! A simple graph of points in a plane.</span>
 
@@ -819,10 +827,18 @@
 <span class="doccomment">/// edges can overlap). Points can only be connected in &quot;straight&quot; 2D</span>
 <span class="doccomment">/// directions.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(
+    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;impl-serde&quot;</span>,
+    <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>, <span class="ident">serde::Deserialize</span>)
+)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Graph</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Ord</span>,
 {
+    <span class="attribute">#[<span class="ident">cfg_attr</span>(
+        <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;impl-serde&quot;</span>,
+        <span class="ident">serde</span>(<span class="ident">bound</span>(<span class="ident">deserialize</span> <span class="op">=</span> <span class="string">&quot;T: serde::Deserialize&lt;&#39;de&gt; + Clone&quot;</span>))
+    )]</span>
     <span class="ident">vertices_edges</span>: <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">VertexEdges</span><span class="op">&gt;</span>,
 }
 

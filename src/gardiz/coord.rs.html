@@ -1055,6 +1055,10 @@
 <span id="1053">1053</span>
 <span id="1054">1054</span>
 <span id="1055">1055</span>
+<span id="1056">1056</span>
+<span id="1057">1057</span>
+<span id="1058">1058</span>
+<span id="1059">1059</span>
 </pre><pre class="rust">
 <span class="doccomment">//! Utilites related to coordinates.</span>
 
@@ -1118,6 +1122,10 @@
 <span class="doccomment">/// Generic 2D vector. It could be a coordinate, it could be size, anything like</span>
 <span class="doccomment">/// that.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>, <span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(
+    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;impl-serde&quot;</span>,
+    <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>, <span class="ident">serde::Deserialize</span>)
+)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Value of the Y-coordinate.</span>
     <span class="kw">pub</span> <span class="ident">y</span>: <span class="ident">T</span>,

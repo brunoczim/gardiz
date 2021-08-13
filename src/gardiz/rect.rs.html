@@ -774,6 +774,10 @@
 <span id="772">772</span>
 <span id="773">773</span>
 <span id="774">774</span>
+<span id="775">775</span>
+<span id="776">776</span>
+<span id="777">777</span>
+<span id="778">778</span>
 </pre><pre class="rust">
 <span class="doccomment">//! This module exports rectangle utilities.</span>
 
@@ -795,6 +799,10 @@
 
 <span class="doccomment">/// A rectangle in a plane.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>, <span class="ident">Hash</span>, <span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(
+    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;impl-serde&quot;</span>,
+    <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>, <span class="ident">serde::Deserialize</span>)
+)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Rect</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">S</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Starting top-left point.</span>
     <span class="kw">pub</span> <span class="ident">start</span>: <span class="ident">Vec2</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
