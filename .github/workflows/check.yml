@@ -21,6 +21,12 @@ jobs:
         with:
           command: check
 
+      - name: Run cargo check with serde
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --features impl-serde
+
   test:
     name: Test Suite
     runs-on: ubuntu-latest
@@ -39,6 +45,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
+
+      - name: Run cargo test with serde
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --features impl-serde
 
   lints:
     name: Lints
