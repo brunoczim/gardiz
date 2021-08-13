@@ -4,6 +4,10 @@ use std::{fmt, ops::Not, slice};
 
 /// The axes of a plane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(
+    feature = "impl-serde",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub enum Axis {
     /// The Y axis (changes vertically).
     Y,

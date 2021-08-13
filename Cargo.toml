@@ -1,6 +1,6 @@
 [package]
 name = "gardiz"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["brunoczim <brunoczim@gmail.com>"]
 edition = "2018"
 description = "A library for integer geometry on 2D planes, focused on games"
@@ -10,6 +10,11 @@ license-file = "LICENSE"
 keywords = ["plane", "graph", "geometry", "integer", "2D"]
 categories = ["game-development", "mathematics", "data-structures"]
 
+[features]
+default = ["impl-serde"]
+impl-serde = ["serde"]
+
 [dependencies]
 num = "^0.4"
 priority-queue = "^1.1"
+serde = { version = "^1.0", optional = true, features = ["derive"] }

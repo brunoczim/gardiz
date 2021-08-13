@@ -12,6 +12,9 @@ use std::{
     mem,
 };
 
+#[cfg(feature = "impl-serde")]
+use std::{any::type_name, fmt, marker::PhantomData};
+
 /// Map of coordinates in a plane to arbitrary data. Optimized given the fact
 /// the coordinates/vectors are in the plane. Keys of the map are `Vec2<K>`.
 #[derive(Debug, Clone)]
@@ -339,6 +342,84 @@ where
         let mut map = Map::new();
         map.extend(iter);
         map
+    }
+}
+
+#[cfg(feature = "impl-serde")]
+impl<K, V> serde::Serialize for Map<K, V>
+where
+    K: serde::Serialize + Ord,
+    V: serde::Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_map(self.rows())
+    }
+}
+
+#[cfg(feature = "impl-serde")]
+#[derive(Debug, Clone)]
+struct DeVisitor<K, V>
+where
+    K: Ord,
+{
+    marker: PhantomData<fn() -> Map<K, V>>,
+}
+
+#[cfg(feature = "impl-serde")]
+impl<K, V> DeVisitor<K, V>
+where
+    K: Ord,
+{
+    fn new() -> Self {
+        Self { marker: PhantomData }
+    }
+}
+
+#[cfg(feature = "impl-serde")]
+impl<'de, K, V> serde::de::Visitor<'de> for DeVisitor<K, V>
+where
+    K: serde::Deserialize<'de> + Ord + Clone,
+    V: serde::Deserialize<'de> + Clone,
+{
+    type Value = Map<K, V>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> fmt::Result {
+        write!(
+            formatter,
+            "Expecting a map from vectors {} to {}",
+            type_name::<Vec2<K>>(),
+            type_name::<V>()
+        )
+    }
+
+    fn visit_map<A>(self, mut access: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        let mut map = Map::new();
+
+        while let Some((point, value)) = access.next_entry()? {
+            map.insert(point, value);
+        }
+
+        Ok(map)
+    }
+}
+
+#[cfg(feature = "impl-serde")]
+impl<'de, K, V> serde::Deserialize<'de> for Map<K, V>
+where
+    K: serde::Deserialize<'de> + Ord + Clone,
+    V: serde::Deserialize<'de> + Clone,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_map(DeVisitor::new())
     }
 }
 

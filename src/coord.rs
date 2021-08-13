@@ -60,6 +60,10 @@ use std::{
 /// Generic 2D vector. It could be a coordinate, it could be size, anything like
 /// that.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[cfg_attr(
+    feature = "impl-serde",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Vec2<T> {
     /// Value of the Y-coordinate.
     pub y: T,

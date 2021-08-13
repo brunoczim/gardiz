@@ -8,3 +8,10 @@ plane to data, sets of points in a plane, simple graphs of points in a plane
 # Main Branch Docs
 
 https://brunoczim.github.io/gardiz/gardiz/
+
+# Features
+
+## `impl-serde`
+
+Enable this to make data strcutures such as `Vec2` and `Map` implement serde
+serialization and deserialization traits for data types.

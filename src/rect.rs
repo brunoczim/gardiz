@@ -18,6 +18,10 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 /// A rectangle in a plane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[cfg_attr(
+    feature = "impl-serde",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Rect<T, S = T> {
     /// Starting top-left point.
     pub start: Vec2<T>,

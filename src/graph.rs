@@ -32,10 +32,18 @@ pub type VertexEdges = DirecMap<bool>;
 /// edges can overlap). Points can only be connected in "straight" 2D
 /// directions.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "impl-serde",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Graph<T>
 where
     T: Ord,
 {
+    #[cfg_attr(
+        feature = "impl-serde",
+        serde(bound(deserialize = "T: serde::Deserialize<'de> + Clone"))
+    )]
     vertices_edges: Map<T, VertexEdges>,
 }
 

@@ -10,10 +10,18 @@ use std::{borrow::Borrow, iter::FromIterator};
 /// The set of coordinates/vectors in a plane, optimized for being in the plane.
 /// Members of the set are `Vec2<T>`.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "impl-serde",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Set<T>
 where
     T: Ord,
 {
+    #[cfg_attr(
+        feature = "impl-serde",
+        serde(bound(deserialize = "T: serde::Deserialize<'de> + Clone"))
+    )]
     inner: Map<T, ()>,
 }
 

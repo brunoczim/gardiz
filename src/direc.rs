@@ -8,6 +8,10 @@ use std::{
 
 /// Basic direction in a plane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(
+    feature = "impl-serde",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub enum Direction {
     /// Direction up (towards negative Y).
     Up,
@@ -149,6 +153,10 @@ impl ExactSizeIterator for Iter {}
 
 /// A vector written as a magnitude and a direction.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(
+    feature = "impl-serde",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct DirecVector<T> {
     /// Mangitude, should be numeric.
     pub magnitude: T,
@@ -158,6 +166,10 @@ pub struct DirecVector<T> {
 
 /// A mapping from all directions to the given data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "impl-serde",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct DirecMap<T> {
     /// Data associated with `Direction::Up`.
     pub up: T,
