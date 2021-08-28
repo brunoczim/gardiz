@@ -207,6 +207,31 @@ fn connected_at() {
 }
 
 #[test]
+fn connections() {
+    let graph = make_graph();
+    let connections: Vec<_> = graph
+        .connections()
+        .map(|(va, vb)| (va.copied(), vb.copied()))
+        .collect();
+
+    assert_eq!(
+        connections,
+        &[
+            (Vec2 { x: 3, y: -17 }, Vec2 { x: 3, y: -9 }),
+            (Vec2 { x: 3, y: -9 }, Vec2 { x: 3, y: -3 }),
+            (Vec2 { x: 0, y: -8 }, Vec2 { x: 0, y: -3 }),
+            (Vec2 { x: 0, y: -3 }, Vec2 { x: 0, y: 0 }),
+            (Vec2 { x: 0, y: -3 }, Vec2 { x: 3, y: -3 }),
+            (Vec2 { x: 3, y: -3 }, Vec2 { x: 3, y: -1 }),
+            (Vec2 { x: 3, y: -3 }, Vec2 { x: 1020, y: -3 }),
+            (Vec2 { x: 1020, y: -3 }, Vec2 { x: 1029, y: -3 }),
+            (Vec2 { x: 0, y: 0 }, Vec2 { x: 1, y: 0 }),
+            (Vec2 { x: -9, y: 1400 }, Vec2 { x: -9, y: 1401 })
+        ]
+    );
+}
+
+#[test]
 fn connect_twice() {
     let mut graph = make_graph();
 
