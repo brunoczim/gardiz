@@ -4,6 +4,9 @@ use crate::{coord::Vec2, direc::Direction};
 #[test]
 fn insert() {
     let mut set = Set::<i32>::new();
+
+    assert!(set.is_empty());
+    assert_eq!(set.len(), 0);
     assert!(!set.contains(Vec2 { x: 9, y: -12 }.as_ref()));
     assert!(!set.contains(Vec2 { x: 8, y: -17 }.as_ref()));
     assert!(!set.contains(Vec2 { x: 250, y: 120 }.as_ref()));
@@ -12,16 +15,22 @@ fn insert() {
     assert!(set.contains(Vec2 { x: 9, y: -12 }.as_ref()));
     assert!(!set.contains(Vec2 { x: 8, y: -17 }.as_ref()));
     assert!(!set.contains(Vec2 { x: 250, y: 120 }.as_ref()));
+    assert!(!set.is_empty());
+    assert_eq!(set.len(), 1);
 
     assert!(set.insert(Vec2 { x: 8, y: -17 }));
     assert!(set.contains(Vec2 { x: 9, y: -12 }.as_ref()),);
     assert!(set.contains(Vec2 { x: 8, y: -17 }.as_ref()));
     assert!(!set.contains(Vec2 { x: 250, y: 120 }.as_ref()));
+    assert!(!set.is_empty());
+    assert_eq!(set.len(), 2);
 
     assert!(!set.insert(Vec2 { x: 8, y: -17 }));
     assert!(set.contains(Vec2 { x: 9, y: -12 }.as_ref()));
     assert!(set.contains(Vec2 { x: 8, y: -17 }.as_ref()));
     assert!(!set.contains(Vec2 { x: 250, y: 120 }.as_ref()));
+    assert!(!set.is_empty());
+    assert_eq!(set.len(), 2);
 }
 
 #[test]
@@ -33,24 +42,22 @@ fn remove() {
 
     assert!(set.insert(Vec2 { x: 9, y: -12 }));
     assert!(set.insert(Vec2 { x: 8, y: -17 }));
+    assert!(!set.is_empty());
+    assert_eq!(set.len(), 2);
     assert!(set.remove(Vec2 { x: 8, y: -17 }.as_ref()));
+    assert!(!set.is_empty());
+    assert_eq!(set.len(), 1);
 
     assert!(set.contains(Vec2 { x: 9, y: -12 }.as_ref()));
     assert!(!set.contains(Vec2 { x: 8, y: -17 }.as_ref()));
 
     assert!(set.remove(Vec2 { x: 9, y: -12 }.as_ref()));
+
+    assert!(set.is_empty());
+    assert_eq!(set.len(), 0);
+
     assert!(set.insert(Vec2 { x: 8, y: -17 }));
     assert!(set.insert(Vec2 { x: 9, y: -12 }));
-}
-
-#[test]
-fn is_empty() {
-    let mut set = Set::<i32>::new();
-    assert!(set.is_empty());
-    set.insert(Vec2 { x: 5, y: 2 });
-    assert!(!set.is_empty());
-    set.insert(Vec2 { x: 2, y: -2 });
-    assert!(!set.is_empty());
 }
 
 #[test]

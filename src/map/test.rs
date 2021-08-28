@@ -4,22 +4,30 @@ use crate::{coord::Vec2, direc::Direction};
 #[test]
 fn insert() {
     let mut map = Map::<i32, &str>::new();
+    assert!(map.is_empty());
+    assert_eq!(map.len(), 0);
+
     assert!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).is_none());
     assert!(map.get(Vec2 { x: 8, y: -17 }.as_ref()).is_none());
     assert!(map.get(Vec2 { x: 250, y: 120 }.as_ref()).is_none());
 
     assert!(map.insert(Vec2 { x: 9, y: -12 }, "avocado").is_none());
     assert_eq!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).unwrap(), &"avocado");
+    assert!(!map.is_empty());
+    assert_eq!(map.len(), 1);
 
     assert!(map.insert(Vec2 { x: 8, y: -17 }, "banana").is_none());
     assert_eq!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).unwrap(), &"avocado");
     assert_eq!(map.get(Vec2 { x: 8, y: -17 }.as_ref()).unwrap(), &"banana");
     assert!(map.get(Vec2 { x: 250, y: 120 }.as_ref()).is_none());
+    assert!(!map.is_empty());
+    assert_eq!(map.len(), 2);
 
     assert_eq!(map.insert(Vec2 { x: 8, y: -17 }, "nihil"), Some("banana"));
     assert_eq!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).unwrap(), &"avocado");
     assert_eq!(map.get(Vec2 { x: 8, y: -17 }.as_ref()).unwrap(), &"nihil");
     assert!(map.get(Vec2 { x: 250, y: 120 }.as_ref()).is_none());
+    assert_eq!(map.len(), 2);
 }
 
 #[test]
@@ -31,16 +39,20 @@ fn create() {
 
     assert!(map.create(Vec2 { x: 9, y: -12 }, "avocado"));
     assert_eq!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).unwrap(), &"avocado");
+    assert!(!map.is_empty());
+    assert_eq!(map.len(), 1);
 
     assert!(map.create(Vec2 { x: 8, y: -17 }, "banana"));
     assert_eq!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).unwrap(), &"avocado");
     assert_eq!(map.get(Vec2 { x: 8, y: -17 }.as_ref()).unwrap(), &"banana");
     assert!(map.get(Vec2 { x: 250, y: 120 }.as_ref()).is_none());
+    assert_eq!(map.len(), 2);
 
     assert!(!map.create(Vec2 { x: 8, y: -17 }, "nihil"));
     assert_eq!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).unwrap(), &"avocado");
     assert_eq!(map.get(Vec2 { x: 8, y: -17 }.as_ref()).unwrap(), &"banana");
     assert!(map.get(Vec2 { x: 250, y: 120 }.as_ref()).is_none());
+    assert_eq!(map.len(), 2);
 }
 
 #[test]
@@ -52,7 +64,10 @@ fn remove() {
 
     assert!(map.insert(Vec2 { x: 9, y: -12 }, "avocado").is_none());
     assert!(map.insert(Vec2 { x: 8, y: -17 }, "banana").is_none());
+    assert_eq!(map.len(), 2);
+
     assert_eq!(map.remove(Vec2 { x: 8, y: -17 }.as_ref()), Some("banana"));
+    assert_eq!(map.len(), 1);
 
     assert_eq!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).unwrap(), &"avocado");
     assert!(map.get(Vec2 { x: 8, y: -17 }.as_ref()).is_none());
@@ -60,6 +75,8 @@ fn remove() {
     assert_eq!(map.remove(Vec2 { x: 9, y: -12 }.as_ref()), Some("avocado"));
     assert!(map.get(Vec2 { x: 8, y: -17 }.as_ref()).is_none());
     assert!(map.get(Vec2 { x: 9, y: -12 }.as_ref()).is_none());
+    assert_eq!(map.len(), 0);
+    assert!(map.is_empty());
 }
 
 #[test]
@@ -85,16 +102,6 @@ fn update() {
         map.update(Vec2 { x: 800, y: 700 }.as_ref(), "nothing"),
         Err("nothing")
     );
-}
-
-#[test]
-fn is_empty() {
-    let mut map = Map::<i32, &str>::new();
-    assert!(map.is_empty());
-    map.insert(Vec2 { x: 5, y: 2 }, "testing is fun");
-    assert!(!map.is_empty());
-    map.insert(Vec2 { x: 2, y: -2 }, "hope it's still fun");
-    assert!(!map.is_empty());
 }
 
 #[test]

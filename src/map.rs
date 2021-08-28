@@ -23,6 +23,7 @@ where
     K: Ord,
 {
     neighbours: Vec2<BTreeMap<K, BTreeMap<K, V>>>,
+    len: usize,
 }
 
 impl<K, V> Default for Map<K, V>
@@ -40,12 +41,18 @@ where
 {
     /// Creates a new empty coordinate map.
     pub fn new() -> Self {
-        Map { neighbours: Vec2::from_axes(|_| BTreeMap::new()) }
+        Map { neighbours: Vec2::from_axes(|_| BTreeMap::new()), len: 0 }
     }
 
     /// Returns whether the map is empty.
     pub fn is_empty(&self) -> bool {
         self.neighbours.x.is_empty()
+    }
+
+    /// Returns the length of the map, i.e. how many [`Vec2`] (keys) are stored
+    /// in this map.
+    pub fn len(&self) -> usize {
+        self.len
     }
 
     /// Attempts to get the data associated with the given point.
@@ -187,6 +194,11 @@ where
             .zip_with(inner_tables, |(key, value), table| {
                 table.insert(key, value)
             });
+
+        if old.x.is_none() {
+            self.len += 1;
+        }
+
         old.x
     }
 
@@ -199,7 +211,7 @@ where
     {
         let values = Vec2 { x: value.clone(), y: value };
         let entries = (!point.clone()).zip(values);
-        let result = self
+        let created = self
             .neighbours
             .as_mut()
             .zip_with(point, |table, key| table.entry(key))
@@ -221,7 +233,11 @@ where
                     }
                 },
             });
-        result.x
+
+        if created.x {
+            self.len += 1;
+        }
+        created.x
     }
 
     /// Updates an existing point's entry with the given value. The entry must
@@ -268,12 +284,16 @@ where
                 let inner_table = table.get_mut(key)?;
 
                 let removed = inner_table.remove(inner_key);
-                if table.is_empty() {
+                if inner_table.is_empty() {
                     table.remove(&key);
                 }
                 removed
             },
         );
+
+        if removed.x.is_some() {
+            self.len -= 1;
+        }
         removed.x
     }
 

@@ -48,6 +48,12 @@ where
         self.inner.is_empty()
     }
 
+    /// Returns the length of the set, i.e. how many [`Vec2`] are stored in this
+    /// set.
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
     /// Tests if the set contains a given point.
     pub fn contains<U>(&self, point: Vec2<&U>) -> bool
     where
