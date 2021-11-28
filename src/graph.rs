@@ -510,7 +510,6 @@ where
     predecessors: HashMap<Vec2<T>, Vec2<T>>,
     travelled: HashMap<Vec2<T>, Cost<T>>,
     cost_points: BTreeMap<Cost<T>, BTreeSet<Vec2<T>>>,
-    point_costs: HashMap<Vec2<T>, Cost<T>>,
 }
 
 impl<T> Default for PathMakerBuf<T>
@@ -534,7 +533,6 @@ where
             predecessors: HashMap::new(),
             travelled: HashMap::new(),
             cost_points: BTreeMap::new(),
-            point_costs: HashMap::new(),
         }
     }
 
@@ -558,7 +556,6 @@ where
         let path = call.run();
         self.travelled.clear();
         self.predecessors.clear();
-        self.point_costs.clear();
         self.cost_points.clear();
         path
     }
@@ -575,28 +572,7 @@ where
     }
 
     fn set_cost(&mut self, point: Vec2<T>, cost: Cost<T>) {
-        match self.point_costs.entry(point.clone()) {
-            hash_map::Entry::Vacant(entry) => {
-                entry.insert(cost.clone());
-                self.cost_points.entry(cost).or_default().insert(point);
-            },
-
-            hash_map::Entry::Occupied(mut entry) => {
-                if *entry.get() != cost {
-                    let prev_points =
-                        self.cost_points.get_mut(entry.get()).unwrap();
-                    prev_points.remove(&point);
-                    if prev_points.is_empty() {
-                        self.cost_points.remove(entry.get());
-                    }
-                    self.cost_points
-                        .entry(cost.clone())
-                        .or_default()
-                        .insert(point);
-                    *entry.get_mut() = cost;
-                }
-            },
-        }
+        self.cost_points.entry(cost).or_default().insert(point);
     }
 }
 
