@@ -11,11 +11,9 @@ use crate::{
     map::{Map, Rows},
 };
 use num::{CheckedAdd, CheckedSub, One, Zero};
-use priority_queue::PriorityQueue;
 use std::{
     borrow::Borrow,
-    cmp,
-    collections::{BTreeSet, HashMap},
+    collections::{hash_map, BTreeMap, BTreeSet, HashMap},
     hash::Hash,
     iter::Peekable,
     ops::AddAssign,
@@ -511,7 +509,8 @@ where
 {
     predecessors: HashMap<Vec2<T>, Vec2<T>>,
     travelled: HashMap<Vec2<T>, Cost<T>>,
-    points: PriorityQueue<Vec2<T>, cmp::Reverse<Cost<T>>>,
+    cost_points: BTreeMap<Cost<T>, BTreeSet<Vec2<T>>>,
+    point_costs: HashMap<Vec2<T>, Cost<T>>,
 }
 
 impl<T> Default for PathMakerBuf<T>
@@ -534,7 +533,8 @@ where
         Self {
             predecessors: HashMap::new(),
             travelled: HashMap::new(),
-            points: PriorityQueue::new(),
+            cost_points: BTreeMap::new(),
+            point_costs: HashMap::new(),
         }
     }
 
@@ -558,8 +558,45 @@ where
         let path = call.run();
         self.travelled.clear();
         self.predecessors.clear();
-        self.points.clear();
+        self.point_costs.clear();
+        self.cost_points.clear();
         path
+    }
+
+    fn pop_cost(&mut self) -> Option<(Vec2<T>, Cost<T>)> {
+        let cost = self.cost_points.keys().next().cloned()?;
+        let points = self.cost_points.get_mut(&cost).unwrap();
+        let point = points.iter().next().cloned().unwrap();
+        points.remove(&point);
+        if points.is_empty() {
+            self.cost_points.remove(&cost);
+        }
+        Some((point, cost))
+    }
+
+    fn set_cost(&mut self, point: Vec2<T>, cost: Cost<T>) {
+        match self.point_costs.entry(point.clone()) {
+            hash_map::Entry::Vacant(entry) => {
+                entry.insert(cost.clone());
+                self.cost_points.entry(cost).or_default().insert(point);
+            },
+
+            hash_map::Entry::Occupied(mut entry) => {
+                if *entry.get() != cost {
+                    let prev_points =
+                        self.cost_points.get_mut(entry.get()).unwrap();
+                    prev_points.remove(&point);
+                    if prev_points.is_empty() {
+                        self.cost_points.remove(entry.get());
+                    }
+                    self.cost_points
+                        .entry(cost.clone())
+                        .or_default()
+                        .insert(point);
+                    *entry.get_mut() = cost;
+                }
+            },
+        }
     }
 }
 
@@ -597,13 +634,13 @@ where
     ) -> Self {
         let this = Self { buf, graph, start, goal, penalty, valid_points };
         this.buf.travelled.insert(this.start.clone(), Cost::new());
-        this.buf.points.push(this.start.clone(), cmp::Reverse(Cost::new()));
+        this.buf.set_cost(this.start.clone(), Cost::new());
         this
     }
 
     fn run(&mut self) -> Option<Vec<DirecVector<T>>> {
         loop {
-            let (current, cmp::Reverse(cost)) = self.buf.points.pop()?;
+            let (current, cost) = self.buf.pop_cost()?;
 
             if current == *self.goal {
                 break Some(self.assemble_path(cost));
@@ -691,7 +728,7 @@ where
                         .zip_with(self.goal.clone(), Distance::distance)
                         .fold(T::zero(), |coord_a, coord_b| coord_a + coord_b);
                     attempt.distance += heuristics;
-                    self.buf.points.push(neighbour, cmp::Reverse(attempt));
+                    self.buf.set_cost(neighbour, attempt);
                 }
             }
         }

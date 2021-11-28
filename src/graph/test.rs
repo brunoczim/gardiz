@@ -643,7 +643,7 @@ fn a_star() {
     let mut graph = make_a_star_graph();
     let start = Vec2 { x: 0, y: 0 };
     let goal = Vec2 { x: 5, y: 7 };
-    let penalty = 2;
+    let penalty = 100;
     let valid_points = |point: &Vec2<u16>| point.x < 10 && point.y < 10;
 
     let directions =
@@ -652,17 +652,19 @@ fn a_star() {
     assert_eq!(
         directions,
         vec![
-            DirecVector { direction: Direction::Down, magnitude: 7 },
             DirecVector { direction: Direction::Right, magnitude: 5 },
+            DirecVector { direction: Direction::Down, magnitude: 7 },
         ]
     );
 
     let mut expected = make_a_star_graph();
-    expected.create_vertex(Vec2 { x: 0, y: 7 });
+    expected.create_vertex(Vec2 { x: 5, y: 0 });
     expected
-        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 0, y: 7 }.as_ref());
+        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 5, y: 0 }.as_ref());
     expected
-        .connect(Vec2 { x: 5, y: 7 }.as_ref(), Vec2 { x: 0, y: 7 }.as_ref());
+        .connect(Vec2 { x: 5, y: 2 }.as_ref(), Vec2 { x: 5, y: 0 }.as_ref());
+    expected
+        .connect(Vec2 { x: 5, y: 2 }.as_ref(), Vec2 { x: 5, y: 7 }.as_ref());
 
     assert_eq!(graph, expected);
 }
@@ -672,7 +674,7 @@ fn a_star_irregular() {
     let mut graph = make_a_star_graph();
     let start = Vec2 { x: 0, y: 0 };
     let goal = Vec2 { x: 5, y: 7 };
-    let penalty = 2;
+    let penalty = 10;
     let valid_points = |point: &Vec2<u16>| {
         point.x < 4 && point.y < 3
             || point.x >= 3 && point.y >= 3 && point.x < 6 && point.y < 5
