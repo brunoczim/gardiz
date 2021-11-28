@@ -3,7 +3,12 @@ use gardiz::{
     graph::{Graph, PathMakerBuf},
     set::Set,
 };
-use rand::{rngs::StdRng, seq::SliceRandom, Rng, SeedableRng};
+use rand::{
+    rngs::StdRng,
+    seq::{IteratorRandom, SliceRandom},
+    Rng,
+    SeedableRng,
+};
 
 const VERTICES_COUNT: usize = 20;
 const EDGES_COUNT: usize = 124;
@@ -43,7 +48,7 @@ fn generate_vertices<R>(
 {
     let points = area.rows().map(Vec2::copied).collect::<Vec<_>>();
     let amount = points.len().min(max_vertices);
-    for &point in points.choose_multiple(&mut *rng, amount) {
+    for &point in points.iter().choose_multiple(&mut *rng, amount) {
         target.create_vertex(point);
     }
 }
