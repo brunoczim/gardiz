@@ -13,8 +13,9 @@ use crate::{
 use num::{CheckedAdd, CheckedSub, One, Zero};
 use std::{
     borrow::Borrow,
-    collections::{hash_map, BTreeMap, BTreeSet, HashMap},
-    hash::Hash,
+    cmp::{Ordering, Reverse},
+    collections::{BTreeSet, BinaryHeap, HashMap},
+    hash::{Hash, Hasher},
     iter::Peekable,
     ops::AddAssign,
 };
@@ -501,7 +502,7 @@ where
 
 /// A buffer for an A* search algorithm useful for saving a few deallocations
 /// and allocations when performing lots of searches. See [`Graph::make_path`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct PathMakerBuf<T>
 where
     T: Clone + Hash + Ord,
@@ -509,7 +510,7 @@ where
 {
     predecessors: HashMap<Vec2<T>, Vec2<T>>,
     travelled: HashMap<Vec2<T>, Cost<T>>,
-    cost_points: BTreeMap<Cost<T>, BTreeSet<Vec2<T>>>,
+    cost_points: BinaryHeap<BinaryHeapEntry<T>>,
 }
 
 impl<T> Default for PathMakerBuf<T>
@@ -532,7 +533,7 @@ where
         Self {
             predecessors: HashMap::new(),
             travelled: HashMap::new(),
-            cost_points: BTreeMap::new(),
+            cost_points: BinaryHeap::new(),
         }
     }
 
@@ -559,24 +560,9 @@ where
         self.cost_points.clear();
         path
     }
-
-    fn pop_cost(&mut self) -> Option<(Vec2<T>, Cost<T>)> {
-        let cost = self.cost_points.keys().next().cloned()?;
-        let points = self.cost_points.get_mut(&cost).unwrap();
-        let point = points.iter().next().cloned().unwrap();
-        points.remove(&point);
-        if points.is_empty() {
-            self.cost_points.remove(&cost);
-        }
-        Some((point, cost))
-    }
-
-    fn set_cost(&mut self, point: Vec2<T>, cost: Cost<T>) {
-        self.cost_points.entry(cost).or_default().insert(point);
-    }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 struct PathMakerCall<'maker, 'graph, 'points, T, F>
 where
     T: Clone + Hash + Ord,
@@ -610,19 +596,22 @@ where
     ) -> Self {
         let this = Self { buf, graph, start, goal, penalty, valid_points };
         this.buf.travelled.insert(this.start.clone(), Cost::new());
-        this.buf.set_cost(this.start.clone(), Cost::new());
+        this.buf.cost_points.push(BinaryHeapEntry {
+            point: this.start.clone(),
+            cost: Cost::new(),
+        });
         this
     }
 
     fn run(&mut self) -> Option<Vec<DirecVector<T>>> {
         loop {
-            let (current, cost) = self.buf.pop_cost()?;
+            let current = self.buf.cost_points.pop()?;
 
-            if current == *self.goal {
-                break Some(self.assemble_path(cost));
+            if current.point == *self.goal {
+                break Some(self.assemble_path(current.cost));
             }
 
-            self.eval_neighbours(current);
+            self.eval_neighbours(current.point);
         }
     }
 
@@ -704,7 +693,10 @@ where
                         .zip_with(self.goal.clone(), Distance::distance)
                         .fold(T::zero(), |coord_a, coord_b| coord_a + coord_b);
                     attempt.distance += heuristics;
-                    self.buf.set_cost(neighbour, attempt);
+                    self.buf.cost_points.push(BinaryHeapEntry {
+                        point: neighbour,
+                        cost: attempt,
+                    });
                 }
             }
         }
@@ -723,6 +715,53 @@ impl<T> Cost<T> {
         T: Zero,
     {
         Self { distance: T::zero(), turns: T::zero() }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct BinaryHeapEntry<T> {
+    cost: Cost<T>,
+    point: Vec2<T>,
+}
+
+impl<T> PartialEq for BinaryHeapEntry<T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.cost == other.cost
+    }
+}
+
+impl<T> Eq for BinaryHeapEntry<T> where T: Eq {}
+
+impl<T> PartialOrd for BinaryHeapEntry<T>
+where
+    T: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.cost.partial_cmp(&other.cost).map(Ordering::reverse)
+    }
+}
+
+impl<T> Ord for BinaryHeapEntry<T>
+where
+    T: Ord,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.cost.cmp(&other.cost).reverse()
+    }
+}
+
+impl<T> Hash for BinaryHeapEntry<T>
+where
+    T: Hash,
+{
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        self.cost.hash(state)
     }
 }
 
