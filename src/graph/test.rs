@@ -652,19 +652,17 @@ fn a_star() {
     assert_eq!(
         directions,
         vec![
-            DirecVector { direction: Direction::Right, magnitude: 5 },
             DirecVector { direction: Direction::Down, magnitude: 7 },
+            DirecVector { direction: Direction::Right, magnitude: 5 },
         ]
     );
 
     let mut expected = make_a_star_graph();
-    expected.create_vertex(Vec2 { x: 5, y: 0 });
+    expected.create_vertex(Vec2 { x: 0, y: 7 });
     expected
-        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 5, y: 0 }.as_ref());
+        .connect(Vec2 { x: 0, y: 0 }.as_ref(), Vec2 { x: 0, y: 7 }.as_ref());
     expected
-        .connect(Vec2 { x: 5, y: 2 }.as_ref(), Vec2 { x: 5, y: 0 }.as_ref());
-    expected
-        .connect(Vec2 { x: 5, y: 2 }.as_ref(), Vec2 { x: 5, y: 7 }.as_ref());
+        .connect(Vec2 { x: 5, y: 7 }.as_ref(), Vec2 { x: 0, y: 7 }.as_ref());
 
     assert_eq!(graph, expected);
 }
