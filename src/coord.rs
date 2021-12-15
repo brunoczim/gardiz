@@ -99,6 +99,15 @@ impl<T> Not for Vec2<T> {
     }
 }
 
+impl<T> fmt::Display for Vec2<T>
+where
+    T: fmt::Display,
+{
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmtr, "(x={}, y={})", self.x, self.y)
+    }
+}
+
 impl<T> Vec2<T> {
     /// Creates a vector from a function over axis to data.
     pub fn from_axes<F>(mut mapper: F) -> Self
