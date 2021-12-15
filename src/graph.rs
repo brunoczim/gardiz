@@ -13,7 +13,7 @@ use crate::{
 use num::{CheckedAdd, CheckedSub, One, Zero};
 use std::{
     borrow::Borrow,
-    cmp::{Ordering, Reverse},
+    cmp::Ordering,
     collections::{BTreeSet, BinaryHeap, HashMap},
     hash::{Hash, Hasher},
     iter::Peekable,
