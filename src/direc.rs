@@ -152,6 +152,22 @@ impl DoubleEndedIterator for Iter {
 impl ExactSizeIterator for Iter {}
 
 /// A vector written as a magnitude and a direction.
+///
+/// # Warning
+/// Zero vectors of _different_ directions **are not** equal to each other. As
+/// well as _negative_ vector **isn't** equal to positive in contrary direction.
+///
+/// ## Example
+/// ```
+/// # use gardiz::direc::{DirecVector, Direction};
+/// let v_zero_left = DirecVector{magnitude: 0, direction: Direction::Left};
+/// let v_zero_right = DirecVector{magnitude: 0, direction: Direction::Right};
+/// assert_ne!(v_zero_left, v_zero_right);
+///
+/// let v_zero_up = DirecVector{magnitude: 1, direction: Direction::Up};
+/// let v_zero_up_neg = DirecVector{magnitude: -1, direction: Direction::Down};
+/// assert_ne!(v_zero_up, v_zero_up_neg);
+/// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(
     feature = "impl-serde",
@@ -162,6 +178,18 @@ pub struct DirecVector<T> {
     pub magnitude: T,
     /// Direction of the vector.
     pub direction: Direction,
+}
+
+/// A scalar multiplication for a vector.
+impl<T> std::ops::Mul<T> for &DirecVector<T>
+where
+    T: std::ops::Mul<Output = T> + Copy,
+{
+    type Output = DirecVector<T>;
+
+    fn mul(self, rhs: T) -> Self::Output {
+        DirecVector { magnitude: self.magnitude * rhs, ..*self }
+    }
 }
 
 /// A mapping from all directions to the given data.
@@ -217,5 +245,23 @@ impl<T> IndexMut<Direction> for DirecMap<T> {
             Direction::Down => &mut self.down,
             Direction::Right => &mut self.right,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn direcvec_mul_zero() {
+        let t = DirecVector { magnitude: -3, direction: Direction::Down };
+        let t = &t * 0;
+        assert_eq!(t, DirecVector { magnitude: 0, direction: Direction::Down });
+    }
+
+    #[test]
+    fn direcvec_mul_i32() {
+        let t = &DirecVector { magnitude: -3, direction: Direction::Up } * -2;
+        assert_eq!(t, DirecVector { magnitude: 6, direction: Direction::Up });
     }
 }
