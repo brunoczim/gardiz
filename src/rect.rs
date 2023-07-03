@@ -4,7 +4,7 @@
 mod test;
 
 use crate::{axis::Axis, coord::Vec2};
-use num::traits::{
+pub use num::traits::{
     CheckedAdd,
     CheckedSub,
     One,
