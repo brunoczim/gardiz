@@ -2,7 +2,7 @@
 
 use crate::axis::Axis;
 use std::{
-    ops::{Index, IndexMut, Not},
+    ops::{Index, IndexMut, Mul, Not},
     slice,
 };
 
@@ -152,17 +152,74 @@ impl DoubleEndedIterator for Iter {
 impl ExactSizeIterator for Iter {}
 
 /// A vector written as a magnitude and a direction.
+///
+/// # Warning
+/// Zero vectors of _different_ directions **are not** equal to each other. As
+/// well as _negative_ vector **isn't** equal to positive in contrary direction.
+///
+/// ## Example
+/// ```
+/// # use gardiz::direc::{DirecVector, Direction};
+/// let v_zero_left = DirecVector{magnitude: 0, direction: Direction::Left};
+/// let v_zero_right = DirecVector{magnitude: 0, direction: Direction::Right};
+/// assert_ne!(v_zero_left, v_zero_right);
+///
+/// let v_zero_up = DirecVector{magnitude: 1, direction: Direction::Up};
+/// let v_zero_up_neg = DirecVector{magnitude: -1, direction: Direction::Down};
+/// assert_ne!(v_zero_up, v_zero_up_neg);
+/// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(
     feature = "impl-serde",
     derive(serde::Serialize, serde::Deserialize)
 )]
 pub struct DirecVector<T> {
-    /// Mangitude, should be numeric.
+    /// Magnitude, should be numeric.
     pub magnitude: T,
     /// Direction of the vector.
     pub direction: Direction,
 }
+
+/// Scalar multiplication for a vector.
+impl<T> Mul<&T> for &DirecVector<T>
+where
+    T: Mul<Output = T> + Clone,
+{
+    type Output = DirecVector<T>;
+    fn mul(self, rhs: &T) -> Self::Output {
+        DirecVector { magnitude: self.magnitude.clone() * rhs.clone(), ..*self }
+    }
+}
+
+impl<T> Mul<T> for &DirecVector<T>
+// https://github.com/brunoczim/gardiz/pull/2#discussion_r1281192652
+where
+    T: Mul<Output = T> + Clone,
+{
+    type Output = DirecVector<T>;
+
+    fn mul(self, rhs: T) -> Self::Output {
+        self * &rhs
+    }
+}
+
+macro_rules! direc_vector_mul_impl {
+    ($($T: ty),* $(,)*) => {
+        $(
+            impl Mul<&DirecVector<$T>> for $T
+                // where T: Mul<Output=$T> + Clone
+            {
+                type Output = DirecVector<$T>;
+                fn mul(self, rhs: &DirecVector<$T>) -> Self::Output {
+                    rhs * self
+                }
+            }
+        )*
+    };
+}
+direc_vector_mul_impl!(
+    u8, u16, u32, u64, usize, i8, i16, i32, i64, isize, f32, f64
+);
 
 /// A mapping from all directions to the given data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -217,5 +274,29 @@ impl<T> IndexMut<Direction> for DirecMap<T> {
             Direction::Down => &mut self.down,
             Direction::Right => &mut self.right,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn direcvec_mul_zero() {
+        let t = DirecVector { magnitude: -3, direction: Direction::Down };
+        let t = &t * 0;
+        assert_eq!(t, DirecVector { magnitude: 0, direction: Direction::Down });
+    }
+
+    #[test]
+    fn direcvec_mul_i32() {
+        let t = &DirecVector { magnitude: -3, direction: Direction::Up } * -2;
+        assert_eq!(t, DirecVector { magnitude: 6, direction: Direction::Up });
+    }
+
+    #[test]
+    fn zero_mul_direcvec() {
+        let t = 0 * &DirecVector { magnitude: -3, direction: Direction::Up };
+        assert_eq!(t, DirecVector { magnitude: 0, direction: Direction::Up });
     }
 }
