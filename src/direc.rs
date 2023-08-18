@@ -2,7 +2,7 @@
 
 use crate::axis::Axis;
 use std::{
-    ops::{Index, IndexMut, Not},
+    ops::{Index, IndexMut, Mul, Not},
     slice,
 };
 
@@ -174,23 +174,52 @@ impl ExactSizeIterator for Iter {}
     derive(serde::Serialize, serde::Deserialize)
 )]
 pub struct DirecVector<T> {
-    /// Mangitude, should be numeric.
+    /// Magnitude, should be numeric.
     pub magnitude: T,
     /// Direction of the vector.
     pub direction: Direction,
 }
 
-/// A scalar multiplication for a vector.
-impl<T> std::ops::Mul<T> for &DirecVector<T>
+/// Scalar multiplication for a vector.
+impl<T> Mul<&T> for &DirecVector<T>
 where
-    T: std::ops::Mul<Output = T> + Copy,
+    T: Mul<Output = T> + Clone,
+{
+    type Output = DirecVector<T>;
+    fn mul(self, rhs: &T) -> Self::Output {
+        DirecVector { magnitude: self.magnitude.clone() * rhs.clone(), ..*self }
+    }
+}
+
+impl<T> Mul<T> for &DirecVector<T>
+// https://github.com/brunoczim/gardiz/pull/2#discussion_r1281192652
+where
+    T: Mul<Output = T> + Clone,
 {
     type Output = DirecVector<T>;
 
     fn mul(self, rhs: T) -> Self::Output {
-        DirecVector { magnitude: self.magnitude * rhs, ..*self }
+        self * &rhs
     }
 }
+
+macro_rules! direc_vector_mul_impl {
+    ($($T: ty),* $(,)*) => {
+        $(
+            impl Mul<&DirecVector<$T>> for $T
+                // where T: Mul<Output=$T> + Clone
+            {
+                type Output = DirecVector<$T>;
+                fn mul(self, rhs: &DirecVector<$T>) -> Self::Output {
+                    rhs * self
+                }
+            }
+        )*
+    };
+}
+direc_vector_mul_impl!(
+    u8, u16, u32, u64, usize, i8, i16, i32, i64, isize, f32, f64
+);
 
 /// A mapping from all directions to the given data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -263,5 +292,11 @@ mod tests {
     fn direcvec_mul_i32() {
         let t = &DirecVector { magnitude: -3, direction: Direction::Up } * -2;
         assert_eq!(t, DirecVector { magnitude: 6, direction: Direction::Up });
+    }
+
+    #[test]
+    fn zero_mul_direcvec() {
+        let t = 0 * &DirecVector { magnitude: -3, direction: Direction::Up };
+        assert_eq!(t, DirecVector { magnitude: 0, direction: Direction::Up });
     }
 }
